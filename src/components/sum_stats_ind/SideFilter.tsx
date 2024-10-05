@@ -9,6 +9,7 @@ import {
   variables,
   bin_marks,
   axis,
+  map_jit_marks,
 } from "@/assets/FilterOptions";
 import {
   Box,
@@ -28,6 +29,7 @@ import {
 import { SelectChangeEvent } from "@mui/material/Select";
 import { checkboxBoxStyles } from "@/assets/styles";
 import { TextField } from "@mui/material";
+import { b } from "vite/dist/node/types.d-aGj9QkWt";
 
 interface FilterState {
   var_1: string;
@@ -65,6 +67,15 @@ interface FilterState {
   y_axis: string;
   min_y_axis: number;
   max_y_axis: number;
+  map_data: boolean;
+  map_data_rad: number;
+  map_reg: boolean;
+  map_reg_rad: number;
+  map_pop: boolean;
+  map_pop_rad: number;
+  map_ind_rad: number;
+  map_lat_jit: number;
+  map_lon_jit: number;
 }
 
 interface SideFilterProps {
@@ -268,23 +279,25 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   ))}
                 </Select>
               </FormControl>
-              <Box sx={checkboxBoxStyles}>
-                <FormControlLabel
-                  value="bottom"
-                  control={
-                    <Checkbox
-                      checked={filters.mea_med_1}
-                      size="small"
-                      onChange={(event) =>
-                        handleFilterChange("mea_med_1", event.target.checked)
-                      }
-                    />
-                  }
-                  label="Mean/Median"
-                  labelPlacement="end"
-                  sx={{ width: "100%" }}
-                />
-              </Box>
+              {filters.plot !== "Map" && (
+                <Box sx={checkboxBoxStyles}>
+                  <FormControlLabel
+                    value="bottom"
+                    control={
+                      <Checkbox
+                        checked={filters.mea_med_1}
+                        size="small"
+                        onChange={(event) =>
+                          handleFilterChange("mea_med_1", event.target.checked)
+                        }
+                      />
+                    }
+                    label="Mean/Median"
+                    labelPlacement="end"
+                    sx={{ width: "100%" }}
+                  />
+                </Box>
+              )}
               <MultipleSelectChip
                 sx={{ mb: 1, mt: 1 }}
                 options={datasets.options}
@@ -575,151 +588,320 @@ const SideFilter: React.FC<SideFilterProps> = ({
         </Grid>
       </>
       <Grid item xs={12}>
-        <MultipleSelectChip
-          sx={{ mb: 1 }}
-          options={[
-            ...variables.discreteOptions,
-            ...variables.continuousOptions,
-          ]}
-          label="Color by"
-          selectedValues={filters.col}
-          onChange={(newValues) => handleFilterChange("col", newValues)}
-        />
-        <MultipleSelectChip
-          sx={{ mb: 1, mt: 1 }}
-          options={variables.discreteOptions}
-          label="Facet in X"
-          selectedValues={filters.fac_x}
-          onChange={(newValues) => handleFilterChange("fac_x", newValues)}
-        />
-        <MultipleSelectChip
-          sx={{ mb: 1, mt: 1 }}
-          options={variables.discreteOptions}
-          label="Facet in Y"
-          selectedValues={filters.fac_y}
-          onChange={(newValues) => handleFilterChange("fac_y", newValues)}
-        />
+        {filters.plot !== "Map" && (
+          <>
+            <MultipleSelectChip
+              sx={{ mb: 1 }}
+              options={[
+                ...variables.discreteOptions,
+                ...variables.continuousOptions,
+              ]}
+              label="Color by"
+              selectedValues={filters.col}
+              onChange={(newValues) => handleFilterChange("col", newValues)}
+            />
+            <MultipleSelectChip
+              sx={{ mb: 1, mt: 1 }}
+              options={variables.discreteOptions}
+              label="Facet in X"
+              selectedValues={filters.fac_x}
+              onChange={(newValues) => handleFilterChange("fac_x", newValues)}
+            />
+            <MultipleSelectChip
+              sx={{ mb: 1, mt: 1 }}
+              options={variables.discreteOptions}
+              label="Facet in Y"
+              selectedValues={filters.fac_y}
+              onChange={(newValues) => handleFilterChange("fac_y", newValues)}
+            />
+            {filters.plot !== "Violin" && (
+              <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
+                <InputLabel id="x_axis_options">X Axis Options</InputLabel>
+                <Select
+                  labelId="x_axis_options"
+                  id="x_axis_options"
+                  value={filters.x_axis} // Bind to the plot state
+                  label="X Axis Options"
+                  onChange={handleSingleChangeUnmapped("x_axis")} // Updated handler
+                >
+                  {axis.options.map((option, index) => (
+                    <MenuItem key={index} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+            {filters.x_axis === "Define Range" && (
+              <Box
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  mb: 1,
+                  mt: 1,
+                }}
+              >
+                <TextField
+                  sx={{ width: "49%" }}
+                  label="Min X"
+                  inputProps={{ type: "number" }}
+                  onChange={(event) =>
+                    handleSingleChangeUnmapped("min_x_axis")(event)
+                  }
+                />
+                <TextField
+                  sx={{ width: "49%" }}
+                  label="Max X"
+                  inputProps={{ type: "number" }}
+                  onChange={(event) =>
+                    handleSingleChangeUnmapped("max_x_axis")(event)
+                  }
+                />
+              </Box>
+            )}
 
-        <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
-          <InputLabel id="x_axis_options">X Axis Options</InputLabel>
-          <Select
-            labelId="x_axis_options"
-            id="x_axis_options"
-            value={filters.x_axis} // Bind to the plot state
-            label="X Axis Options"
-            onChange={handleSingleChangeUnmapped("x_axis")} // Updated handler
-          >
-            {axis.options.map((option, index) => (
-              <MenuItem key={index} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {filters.x_axis === "Define Range" && (
-          <Box
-            sx={{
-              width: "100%",
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 1,
-              mt: 1,
-            }}
-          >
-            <TextField
-              sx={{ width: "49%" }}
-              label="Min X"
-              inputProps={{ type: "number" }}
-              onChange={(event) =>
-                handleSingleChangeUnmapped("min_x_axis")(event)
-              }
-            />
-            <TextField
-              sx={{ width: "49%" }}
-              label="Max X"
-              inputProps={{ type: "number" }}
-              onChange={(event) =>
-                handleSingleChangeUnmapped("max_x_axis")(event)
-              }
-            />
-          </Box>
+            <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
+              <InputLabel id="y_axis_options">Y Axis Options</InputLabel>
+              <Select
+                labelId="y_axis_options"
+                id="y_axis_options"
+                value={filters.y_axis} // Bind to the plot state
+                label="Y Axis Options"
+                onChange={handleSingleChangeUnmapped("y_axis")} // Updated handler
+              >
+                {axis.options.map((option, index) => (
+                  <MenuItem key={index} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {filters.y_axis === "Define Range" && (
+              <Box
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  mb: 1,
+                  mt: 1,
+                  justifyContent: "space-between",
+                }}
+              >
+                <TextField
+                  sx={{ width: "49%" }}
+                  label="Min Y"
+                  inputProps={{ type: "number" }}
+                  onChange={(event) =>
+                    handleSingleChangeUnmapped("min_y_axis")(event)
+                  }
+                />
+                <TextField
+                  sx={{ width: "49%" }}
+                  label="Max Y"
+                  inputProps={{ type: "number" }}
+                  onChange={(event) =>
+                    handleSingleChangeUnmapped("max_y_axis")(event)
+                  }
+                />
+              </Box>
+            )}
+            {filters.plot === "Histogram" && (
+              <Box
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  className="contrast-text"
+                  sx={{ textAlign: "center" }}
+                >
+                  Number of bins
+                </Typography>
+                <Slider
+                  value={filters.n_bins}
+                  onChange={(event, newValue) =>
+                    handleFilterChange("n_bins", newValue as number)
+                  }
+                  aria-labelledby="discrete-slider"
+                  valueLabelDisplay="auto"
+                  step={1}
+                  marks={bin_marks}
+                  min={0}
+                  max={100}
+                  sx={{ width: "85%" }}
+                />
+              </Box>
+            )}
+          </>
         )}
-
-        <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
-          <InputLabel id="y_axis_options">Y Axis Options</InputLabel>
-          <Select
-            labelId="y_axis_options"
-            id="y_axis_options"
-            value={filters.y_axis} // Bind to the plot state
-            label="Y Axis Options"
-            onChange={handleSingleChangeUnmapped("y_axis")} // Updated handler
-          >
-            {axis.options.map((option, index) => (
-              <MenuItem key={index} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {filters.y_axis === "Define Range" && (
-          <Box
-            sx={{
-              width: "100%",
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              mb: 1,
-              mt: 1,
-              justifyContent: "space-between",
-            }}
-          >
+        {filters.plot === "Map" && (
+          <>
+            <Box sx={checkboxBoxStyles}>
+              <FormControlLabel
+                value="bottom"
+                control={
+                  <Checkbox
+                    checked={filters.map_data}
+                    size="small"
+                    onChange={(event) =>
+                      handleFilterChange("map_data", event.target.checked)
+                    }
+                  />
+                }
+                label="Points for Dataset"
+                labelPlacement="end"
+                sx={{ width: "100%" }}
+              />
+            </Box>
+            {filters.map_data === true && (
+              <TextField
+                sx={{ width: "100%", mb: 1, mt: 1 }}
+                label="Radius for Dataset points"
+                inputProps={{ type: "number" }}
+                onChange={(event) =>
+                  handleSingleChangeUnmapped("map_data_rad")(event)
+                }
+              />
+            )}
+            <Box sx={checkboxBoxStyles}>
+              <FormControlLabel
+                value="bottom"
+                control={
+                  <Checkbox
+                    checked={filters.map_reg}
+                    size="small"
+                    onChange={(event) =>
+                      handleFilterChange("map_reg", event.target.checked)
+                    }
+                  />
+                }
+                label="Points for Region"
+                labelPlacement="end"
+                sx={{ width: "100%" }}
+              />
+            </Box>
+            {filters.map_reg === true && (
+              <TextField
+                sx={{ width: "100%", mb: 1, mt: 1 }}
+                label="Radius for Region points"
+                inputProps={{ type: "number" }}
+                onChange={(event) =>
+                  handleSingleChangeUnmapped("map_reg_rad")(event)
+                }
+              />
+            )}
+            <Box sx={checkboxBoxStyles}>
+              <FormControlLabel
+                value="bottom"
+                control={
+                  <Checkbox
+                    checked={filters.map_pop}
+                    size="small"
+                    onChange={(event) =>
+                      handleFilterChange("map_pop", event.target.checked)
+                    }
+                  />
+                }
+                label="Points for Population"
+                labelPlacement="end"
+                sx={{ width: "100%" }}
+              />
+            </Box>
+            {filters.map_pop === true && (
+              <TextField
+                sx={{ width: "100%", mb: 1, mt: 1 }}
+                label="Radius for Population points"
+                inputProps={{ type: "number" }}
+                onChange={(event) =>
+                  handleSingleChangeUnmapped("map_pop_rad")(event)
+                }
+              />
+            )}
             <TextField
-              sx={{ width: "49%" }}
-              label="Min Y"
+              sx={{ width: "100%", mb: 1, mt: 1 }}
+              label="Radius for Individual points"
               inputProps={{ type: "number" }}
               onChange={(event) =>
-                handleSingleChangeUnmapped("min_y_axis")(event)
+                handleSingleChangeUnmapped("map_ind_rad")(event)
               }
-            />
-            <TextField
-              sx={{ width: "49%" }}
-              label="Max Y"
-              inputProps={{ type: "number" }}
-              onChange={(event) =>
-                handleSingleChangeUnmapped("max_y_axis")(event)
-              }
-            />
-          </Box>
-        )}
-        {filters.plot === "Histogram" && (
-          <Box
-            sx={{
-              width: "100%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <Typography className="contrast-text" sx={{ textAlign: "center" }}>
-              Number of bins
-            </Typography>
-            <Slider
-              value={filters.n_bins}
-              onChange={(event, newValue) =>
-                handleFilterChange("n_bins", newValue as number)
-              }
-              aria-labelledby="discrete-slider"
-              valueLabelDisplay="auto"
-              step={1}
-              marks={bin_marks}
-              min={0}
-              max={100}
-              sx={{ width: "85%" }}
-            />
-          </Box>
+            />{" "}
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 1,
+                mt: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  width: "45%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  className="contrast-text"
+                  sx={{ textAlign: "center" }}
+                >
+                  Latitude
+                </Typography>
+                <Slider
+                  value={filters.map_lat_jit}
+                  onChange={(event, newValue) =>
+                    handleFilterChange("map_lat_jit", newValue as number)
+                  }
+                  aria-labelledby="discrete-slider"
+                  valueLabelDisplay="auto"
+                  step={1}
+                  marks={map_jit_marks}
+                  min={0}
+                  max={10}
+                  sx={{ width: "85%" }}
+                />
+              </Box>
+              <Box
+                sx={{
+                  width: "45%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  className="contrast-text"
+                  sx={{ textAlign: "center" }}
+                >
+                  Longitude
+                </Typography>
+                <Slider
+                  value={filters.map_lon_jit}
+                  onChange={(event, newValue) =>
+                    handleFilterChange("map_lon_jit", newValue as number)
+                  }
+                  aria-labelledby="discrete-slider"
+                  valueLabelDisplay="auto"
+                  step={1}
+                  marks={map_jit_marks}
+                  min={0}
+                  max={10}
+                  sx={{ width: "85%" }}
+                />
+              </Box>
+            </Box>
+          </>
         )}
       </Grid>
 

@@ -182,8 +182,8 @@ const fullHistogram = (
   const rowPadding = 70;
 
   const plotWidth =
-    numCols === 1 - margin.right - margin.left
-      ? width
+    numCols === 1
+      ? width - margin.right - margin.left
       : width / numCols - colPadding;
   const plotHeight =
     numRows === 1
@@ -206,7 +206,9 @@ const fullHistogram = (
     getColor = () => defaultColor;
     legendData = [{ label: "Default Color", color: defaultColor }];
   } else if (col.length > 1) {
-    const allDiscrete = col.every((c) => variables.discreteOptions.includes(c));
+    const allDiscrete = col.every((c) =>
+      variables.discreteOptionsShort.includes(c)
+    );
     if (allDiscrete) {
       const uniqueColors = [...new Set(data.map((d) => d.color))];
       const colorScale = d3
@@ -227,7 +229,7 @@ const fullHistogram = (
     const mappedCol =
       variables.mapping[col[0] as keyof typeof variables.mapping];
 
-    if (variables.discreteOptions.includes(col[0])) {
+    if (variables.discreteOptionsShort.includes(col[0])) {
       const uniqueColors = [...new Set(data.map((d) => d.color))];
       const colorScale = d3
         .scaleOrdinal(d3.schemeCategory10)
@@ -308,11 +310,18 @@ const fullHistogram = (
         if (x_axis === "Define Range") {
           xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
         } else if (x_axis === "Shared Axis") {
+          const minVal = d3.min(
+            data,
+            (d) => d[var_x as keyof DataPoint] as number
+          )!;
+          const maxVal = d3.max(
+            data,
+            (d) => d[var_x as keyof DataPoint] as number
+          )!;
+          const buffer = (maxVal - minVal) * 0.05;
+
           xScale
-            .domain([
-              0,
-              d3.max(data, (d) => d[var_x as keyof DataPoint] as number)!,
-            ])
+            .domain([minVal - buffer, maxVal + buffer])
             .range([0, plotWidth]);
         } else if (x_axis === "Free Axis") {
           xScale
@@ -363,7 +372,7 @@ const fullHistogram = (
             const defaultColor = "steelblue"; // You can change this to any color you prefer
             getColor = () => defaultColor;
             legendData = [{ label: "Default Color", color: defaultColor }];
-          } else if (variables.discreteOptions.includes(col[0])) {
+          } else if (variables.discreteOptionsShort.includes(col[0])) {
             // Sort by the order of categorical colors in the color scale domain
             const uniqueColors = [...new Set(data.map((d) => d.color))];
             sortedColorGroups = Array.from(colorGroups).sort(
@@ -488,7 +497,7 @@ const fullHistogram = (
           const defaultColor = "steelblue"; // You can change this to any color you prefer
           getColor = () => defaultColor;
           legendData = [{ label: "Default Color", color: defaultColor }];
-        } else if (variables.discreteOptions.includes(col[0])) {
+        } else if (variables.discreteOptionsShort.includes(col[0])) {
           // Sort by the order of categorical colors in the color scale domain
           const uniqueColors = [...new Set(data.map((d) => d.color))];
           sortedColorGroups = Array.from(colorGroups).sort(
@@ -612,7 +621,7 @@ const fullHistogram = (
           const defaultColor = "steelblue"; // You can change this to any color you prefer
           getColor = () => defaultColor;
           legendData = [{ label: "Default Color", color: defaultColor }];
-        } else if (variables.discreteOptions.includes(col[0])) {
+        } else if (variables.discreteOptionsShort.includes(col[0])) {
           // Sort by the order of categorical colors in the color scale domain
           const uniqueColors = [...new Set(data.map((d) => d.color))];
           sortedColorGroups = Array.from(colorGroups).sort(
@@ -655,7 +664,7 @@ const fullHistogram = (
       facetGroup
         .append("text")
         .attr("x", plotWidth / 2)
-        .attr("y", plotHeight + 30) // Adjust this to move the label below the axis
+        .attr("y", plotHeight + 30)
         .attr("text-anchor", "middle")
         .text(var_x);
 
@@ -664,8 +673,8 @@ const fullHistogram = (
       facetGroup
         .append("text")
         .attr("transform", "rotate(-90)")
-        .attr("x", -plotHeight / 2) // Center the Y axis title along the axis
-        .attr("y", -30) // Adjust this to position the label to the left of the axis
+        .attr("x", -plotHeight / 2)
+        .attr("y", -30)
         .attr("text-anchor", "middle")
         .text("Counts");
 
@@ -730,7 +739,7 @@ const fullHistogram = (
         const defaultColor = "steelblue"; // You can change this to any color you prefer
         getColor = () => defaultColor;
         legendData = [{ label: "Default Color", color: defaultColor }];
-      } else if (variables.discreteOptions.includes(col[0])) {
+      } else if (variables.discreteOptionsShort.includes(col[0])) {
         // Sort by the order of categorical colors in the color scale domain
         const uniqueColors = [...new Set(data.map((d) => d.color))];
         sortedColorGroups = Array.from(colorGroups).sort(
@@ -777,14 +786,13 @@ const fullHistogram = (
       .attr("text-anchor", "middle")
       .text(var_x);
 
-    // Add Y Axis to the facet
     facetGroup.append("g").call(d3.axisLeft(yScale));
 
     facetGroup
       .append("text")
       .attr("transform", "rotate(-90)")
-      .attr("x", -plotHeight / 2) // Center the Y axis title along the axis
-      .attr("y", -30) // Adjust this to position the label to the left of the axis
+      .attr("x", -plotHeight / 2)
+      .attr("y", -30)
       .attr("text-anchor", "middle")
       .text("Counts");
   }

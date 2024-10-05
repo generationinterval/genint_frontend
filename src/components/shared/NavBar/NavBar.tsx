@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
+import { paths } from "@/paths";
 
 export const NavBar: React.FC<NonNullable<unknown>> = () => {
   const { isSidebarVisible, toggleSidebar } = useSidebar();
@@ -41,9 +42,27 @@ export const NavBar: React.FC<NonNullable<unknown>> = () => {
                   <Button variant="contained" href="/about">
                     About
                   </Button>
-                  <Button variant="contained" href="/plots">
-                    Plotting
+                  <Button
+                    variant="contained"
+                    href={paths.summary_stats.per_ind}
+                  >
+                    Summ Per Ind
                   </Button>
+                  <Button variant="contained" href={paths.fragment.vis_per_ind}>
+                    Frag Vis Per Ind
+                  </Button>
+                  {/*                  <Button
+                    variant="contained"
+                    href={paths.summary_stats.per_ind}
+                  >
+                    Summ Per Group
+                  </Button>
+                  <Button
+                    variant="contained"
+                    href={paths.summary_stats.per_ind}
+                  >
+                    Summ Per Frag
+                  </Button> */}
                   {/* <Button variant="contained" href="/">
                     Summary stats per individual
                   </Button>

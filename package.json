@@ -10,17 +10,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/react": "^11.12.0",
-    "@emotion/styled": "^11.12.0",
-    "@mui/icons-material": "^5.16.6",
-    "@mui/material": "^5.16.4",
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^5.16.7",
+    "@mui/material": "^5.16.7",
+    "@mui/system": "^6.1.2",
+    "@mui/x-tree-view": "^7.19.0",
     "@phosphor-icons/react": "^2.1.7",
     "d3": "^7.9.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "leaflet": "^1.9.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.25.1"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.12",
     "@types/node": "^22.1.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

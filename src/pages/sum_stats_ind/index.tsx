@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Grid } from "@mui/material";
 import SideFilter from "@/components/sum_stats_ind/SideFilter";
 import HistogramComponent from "@/components/sum_stats_ind/HistogramComponent";
+import ViolinComponent from "@/components/sum_stats_ind/ViolinComponent";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import "@/global.css";
+import MapComponent from "@/components/sum_stats_ind/MapComponent";
 
 interface FilterState {
   var_1: string;
@@ -41,6 +43,15 @@ interface FilterState {
   y_axis: string;
   min_y_axis: number;
   max_y_axis: number;
+  map_data: boolean;
+  map_data_rad: number;
+  map_reg: boolean;
+  map_reg_rad: number;
+  map_pop: boolean;
+  map_pop_rad: number;
+  map_ind_rad: number;
+  map_lat_jit: number;
+  map_lon_jit: number;
 }
 
 interface DataPoint {
@@ -106,7 +117,7 @@ export const SummStatInd: React.FC = () => {
     mea_med_1: false,
     mea_med_x: false,
     mea_med_y: false,
-    plot: "",
+    plot: "histogram", // Set default plot type here
     n_bins: 20,
     x_axis: "Free Axis",
     min_x_axis: 0,
@@ -114,6 +125,15 @@ export const SummStatInd: React.FC = () => {
     y_axis: "Free Axis",
     min_y_axis: 0,
     max_y_axis: 0,
+    map_data: true,
+    map_data_rad: 15,
+    map_reg: true,
+    map_reg_rad: 10,
+    map_pop: true,
+    map_pop_rad: 15,
+    map_ind_rad: 3,
+    map_lat_jit: 1,
+    map_lon_jit: 1,
   });
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
@@ -147,10 +167,10 @@ export const SummStatInd: React.FC = () => {
 
       const fetchedData = await response.json(); // JSON array directly
       setData(fetchedData); // Set directly since the structure is correct
-      setIsFiltersApplied(true); // Allow histogram rendering
+      setIsFiltersApplied(true); // Allow rendering of components
     } catch (error) {
       console.error("Error:", error);
-      setIsFiltersApplied(false); // Disable histogram rendering on error
+      setIsFiltersApplied(false); // Disable rendering on error
     } finally {
       setLoading(false); // Reset loading state
     }
@@ -193,20 +213,54 @@ export const SummStatInd: React.FC = () => {
       >
         {loading && <div>Loading...</div>} {/* Show a loading indicator */}
         {!loading && isFiltersApplied && data.length > 0 && (
-          <HistogramComponent
-            data={data}
-            var_1_mapped={filters.var_1_mapped}
-            col={filters.col}
-            n_bins={filters.n_bins}
-            isSidebarVisible={isSidebarVisible}
-            mea_med_1={filters.mea_med_1}
-            x_axis={filters.x_axis}
-            min_x_axis={filters.min_x_axis}
-            max_x_axis={filters.max_x_axis}
-            y_axis={filters.y_axis}
-            min_y_axis={filters.min_y_axis}
-            max_y_axis={filters.max_y_axis}
-          />
+          <>
+            {filters.plot === "Histogram" ? (
+              <HistogramComponent
+                data={data}
+                var_1_mapped={filters.var_1_mapped}
+                col={filters.col}
+                n_bins={filters.n_bins}
+                isSidebarVisible={isSidebarVisible}
+                mea_med_1={filters.mea_med_1}
+                x_axis={filters.x_axis}
+                min_x_axis={filters.min_x_axis}
+                max_x_axis={filters.max_x_axis}
+                y_axis={filters.y_axis}
+                min_y_axis={filters.min_y_axis}
+                max_y_axis={filters.max_y_axis}
+              />
+            ) : filters.plot === "Violin" ? (
+              <ViolinComponent
+                data={data}
+                var_1_mapped={filters.var_1_mapped}
+                col={filters.col}
+                n_bins={filters.n_bins}
+                isSidebarVisible={isSidebarVisible}
+                mea_med_1={filters.mea_med_1}
+                x_axis={filters.x_axis}
+                min_x_axis={filters.min_x_axis}
+                max_x_axis={filters.max_x_axis}
+                y_axis={filters.y_axis}
+                min_y_axis={filters.min_y_axis}
+                max_y_axis={filters.max_y_axis}
+              />
+            ) : filters.plot === "Map" ? (
+              <MapComponent
+                data={data}
+                map_data={filters.map_data}
+                map_data_rad={filters.map_data_rad}
+                map_reg={filters.map_data}
+                map_reg_rad={filters.map_reg_rad}
+                map_pop={filters.map_data}
+                map_pop_rad={filters.map_pop_rad}
+                map_ind_rad={filters.map_ind_rad}
+                map_lat_jit={filters.map_lat_jit}
+                map_lon_jit={filters.map_lon_jit}
+              />
+            ) : (
+              <div>No plot type selected</div>
+            )}
+          </>
         )}
         {!loading && !isFiltersApplied && <div>No data to display yet.</div>}
       </Grid>
