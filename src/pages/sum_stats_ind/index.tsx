@@ -52,6 +52,7 @@ interface FilterState {
   map_ind_rad: number;
   map_lat_jit: number;
   map_lon_jit: number;
+  tree_lin: string[];
 }
 
 interface DataPoint {
@@ -134,6 +135,7 @@ export const SummStatInd: React.FC = () => {
     map_ind_rad: 3,
     map_lat_jit: 1,
     map_lon_jit: 1,
+    tree_lin: [],
   });
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
@@ -154,7 +156,7 @@ export const SummStatInd: React.FC = () => {
           regions: filters.reg_1,
           ancestries: filters.ancs_1,
           chromosomes: filters.chrms_1,
-          excluded: [], // Example, or pass actual excluded filters
+          excluded: filters.tree_lin, // Example, or pass actual excluded filters
           facet_x: filters.fac_x,
           facet_y: filters.fac_y,
           color: filters.col,

@@ -29,6 +29,7 @@ import {
 import { SelectChangeEvent } from "@mui/material/Select";
 import { checkboxBoxStyles } from "@/assets/styles";
 import { TextField } from "@mui/material";
+import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
 import { b } from "vite/dist/node/types.d-aGj9QkWt";
 
 interface FilterState {
@@ -76,6 +77,7 @@ interface FilterState {
   map_ind_rad: number;
   map_lat_jit: number;
   map_lon_jit: number;
+  tree_lin: string[];
 }
 
 interface SideFilterProps {
@@ -197,7 +199,62 @@ const SideFilter: React.FC<SideFilterProps> = ({
       }));
     }
   };
+  const handleTreeSelectionChange = (selectedItems: string[]) => {
+    // Update tree_lin with selected tree items
+    setFilters((prevFilters: FilterState) => ({
+      ...prevFilters,
+      tree_lin: selectedItems,
+    }));
+  };
+  /*   const getDefaultValuesForPlot = (plotType: string): Partial<FilterState> => {
+    switch (plotType) {
+      case "Violin":
+        return {
+          data_1: ["DATA", "PDAT"],
+          chrms_1: ["Autosome"],
+          ancs_1: ["All"],
+          mpp_1: 0.5,
+          reg_1: ["EAS", "EUR", "SAS", "OCE", "CAS"],
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          var_1_mapped: "len_mea",
+          col: ["reg"],
+          x_axis: "Shared Axis",
+          y_axis: "Free Axis",
+          fac_x: ["dat", "oda"],
+        };
+      case "Histogram":
+        return {
+          data_1: ["DATA", "PDAT"],
+          chrms_1: ["A"],
+          ancs_1: ["All"],
+          mpp_1: 0.5,
+          reg_1: ["EAS", "EUR", "SAS", "OCE", "CAS"],
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          var_1_mapped: "len_mea",
+          col: ["reg"],
+          n_bins: 50,
+          x_axis: "Shared Axis",
+          y_axis: "Free Axis",
+          fac_x: ["dat", "oda"],
+        };
+      case "Map":
+        return {
+          map_data: true,
+          map_data_rad: 15,
+          map_reg: true,
+          map_reg_rad: 10,
+          map_pop: true,
+          map_pop_rad: 15,
+          map_ind_rad: 3,
+          map_lat_jit: 1,
+          map_lon_jit: 1,
+        };
 
+      default:
+        return {};
+    }
+  };
+ */
   return (
     <Grid container spacing={2}>
       <Grid item xs={12}>
@@ -255,6 +312,12 @@ const SideFilter: React.FC<SideFilterProps> = ({
       <>
         <Grid item xs={12}>
           <Typography variant="h5">2- Data Filters:</Typography>
+        </Grid>
+        <Grid item xs={12}>
+          <GmailTreeViewWithText
+            selectedItems={filters.tree_lin}
+            onSelectedItemsChange={handleTreeSelectionChange} // Handle multiselect in tree
+          />
         </Grid>
       </>
       <Grid item xs={12}>

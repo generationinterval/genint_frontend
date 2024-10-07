@@ -133,6 +133,7 @@ const plotChromosomes = (
 ) => {
   d3.select(svgElement).selectAll("*").remove();
   const container = svgElement.parentElement;
+  d3.select(container).selectAll(".tooltip").remove();
   const containerMargin = { top: 0, right: 0, bottom: 0, left: -10 };
   const plotMargin = { top: 20, right: -30, bottom: 90, left: 75 };
   const width = container
@@ -145,6 +146,53 @@ const plotChromosomes = (
   const plotHeight = height - plotMargin.top - plotMargin.bottom;
 
   const plotWidth = width - plotMargin.left - plotMargin.right;
+  const tooltip = d3.select(container).append("div").attr("class", "tooltip");
+
+  function handleMouseOver(event: any, d: DataPoint) {
+    tooltip.transition().duration(200).style("opacity", 0.9);
+
+    const [mouseX, mouseY] = d3.pointer(event, container);
+
+    const htmlContent = `
+      <strong>Individual:</strong> ${d.name}<br/>
+      <strong>Dataset:</strong> ${d.dat}<br/>
+      <strong>Region:</strong> ${d.reg}<br/>
+      <strong>Population:</strong> ${d.pop}<br/>
+      <strong>Chromosome:</strong> ${d.chrom}<br/>
+      <strong>Haplotype:</strong> ${d.hap}<br/>
+      <strong>Start:</strong> ${d.start}<br/>
+      <strong>End:</strong> ${d.end}<br/>
+      <strong>Length:</strong> ${d.length}<br/>
+      <strong>Mean Post. Prob.:</strong> ${d.mean_prob}<br/>
+      <strong>Ancestry:</strong> ${d.anc}<br/>
+      <strong>SNPs:</strong> ${d.snps}<br/>
+      <strong>arc:</strong> ${d.arc}<br/>
+      <strong>vin:</strong> ${d.vin}<br/>
+      <strong>cha:</strong> ${d.cha}<br/>
+      <strong>alt:</strong> ${d.alt}<br/>
+      <strong>den:</strong> ${d.den}<br/>
+      <strong>car:</strong> ${d.car}<br/>
+      <strong>cne:</strong> ${d.cne}<br/>
+      <strong>pvi:</strong> ${d.pvi}<br/>
+      <strong>pch:</strong> ${d.pch}<br/>
+      <strong>pal:</strong> ${d.pal}<br/>
+      <strong>pde:</strong> ${d.pde}<br/>
+    `;
+
+    tooltip
+      .html(htmlContent)
+      .style("left", mouseX + 10 + "px")
+      .style("top", mouseY - 28 + "px");
+  }
+
+  function handleMouseMove(event: any, d: DataPoint) {
+    const [mouseX, mouseY] = d3.pointer(event, container);
+    tooltip.style("left", mouseX + 10 + "px").style("top", mouseY - 28 + "px");
+  }
+
+  function handleMouseOut(event: any, d: DataPoint) {
+    tooltip.transition().duration(500).style("opacity", 0);
+  }
 
   function reorderChromosomes(chromList: string[]): string[] {
     // Define the desired order
@@ -276,7 +324,10 @@ const plotChromosomes = (
           .attr("y", indYPos)
           .attr("width", endX - startX)
           .attr("height", partitionHeight)
-          .attr("fill", fillColor);
+          .attr("fill", fillColor)
+          .on("mouseover", (event) => handleMouseOver(event, d))
+          .on("mousemove", (event) => handleMouseMove(event, d))
+          .on("mouseout", (event) => handleMouseOut(event, d));
       });
     });
   });

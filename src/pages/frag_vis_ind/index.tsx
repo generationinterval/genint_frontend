@@ -1,14 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Grid } from "@mui/material";
 import SideFilter from "@/components/frag_vis_ind/SideFilter";
-import HistogramComponent from "@/components/sum_stats_ind/HistogramComponent";
-import ViolinComponent from "@/components/sum_stats_ind/ViolinComponent";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import "@/global.css";
+import {
+  ancestries_noAll,
+  chrms_all,
+  mpp_marks,
+  variables,
+  color_chrms,
+  min_chr_len_marks,
+  chr_range_marks,
+} from "@/assets/FilterOptions";
 import ChromosomeComponent from "@/components/frag_vis_ind/ChromosomeComponent";
 
 interface FilterState {
-  text_lin: string[];
   tree_lin: string[];
   chrms: string[];
   ancs: string[];
@@ -43,17 +49,27 @@ interface DataPoint {
   pal: number;
   pde: number;
 }
+
+const defaultChrms = chrms_all.options; // Assuming chrms_all.options contains all chromosomes
+const defaultAncs = ancestries_noAll.options; // Assuming ancestries_noAll.options contains all ancestries
+const defaultColor = "Ancestry";
+const defaultTreeLin = [
+  "HGDP00535_HGDP",
+  "HGDP00535_PGNO",
+  "HG02351_1KGP",
+  "PH_AytaMB-02_AYTA",
+];
+
 export const FragVisInd: React.FC = () => {
   const { isSidebarVisible } = useSidebar();
   const [filters, setFilters] = useState<FilterState>({
-    text_lin: [],
-    tree_lin: [],
-    chrms: [],
-    ancs: [],
+    tree_lin: defaultTreeLin,
+    chrms: defaultChrms,
+    ancs: defaultAncs,
     mpp: 0.5,
     chrms_limits: [0, 250000],
     min_length: 50,
-    color: "",
+    color: defaultColor,
   });
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
@@ -71,7 +87,7 @@ export const FragVisInd: React.FC = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ind_list: filters.text_lin,
+            ind_list: filters.tree_lin,
             mpp: Math.round(filters.mpp * 100),
             ancestries: filters.ancs,
             chromosomes: filters.chrms,
@@ -94,6 +110,10 @@ export const FragVisInd: React.FC = () => {
     }
     console.log("Filters applied:", data);
   };
+
+  useEffect(() => {
+    applyFilters(); // Fetch data when the component first renders
+  }, []);
 
   return (
     <Grid container spacing={2} style={{ height: "100vh", overflow: "hidden" }}>
@@ -134,7 +154,7 @@ export const FragVisInd: React.FC = () => {
             <ChromosomeComponent
               data={data}
               isSidebarVisible={isSidebarVisible}
-              lin={filters.text_lin}
+              lin={filters.tree_lin}
               chrms={filters.chrms}
               ancs={filters.ancs}
               mpp={filters.mpp}

@@ -1,14 +1,11 @@
 import React from "react";
 import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import {
-  datasets,
   ancestries_noAll,
   chrms_all,
   mpp_marks,
-  regions,
   variables,
   color_chrms,
-  bin_marks,
   min_chr_len_marks,
   chr_range_marks,
 } from "@/assets/FilterOptions";
@@ -18,22 +15,15 @@ import {
   Grid,
   Slider,
   Typography,
-  ToggleButton,
-  ToggleButtonGroup,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Checkbox,
-  FormControlLabel,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
-import { checkboxBoxStyles } from "@/assets/styles";
-import { TextField } from "@mui/material";
 import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
 
 interface FilterState {
-  text_lin: string[];
   tree_lin: string[];
   chrms: string[];
   ancs: string[];
@@ -136,21 +126,6 @@ const SideFilter: React.FC<SideFilterProps> = ({
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <Typography variant="h5">1- Select Individuals:</Typography>
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          sx={{ width: "100%" }}
-          label="Individuals to include"
-          inputProps={{ type: "text" }} // Accept text input
-          onChange={(event) => {
-            const value = event.target.value;
-            const listOfStrings = value.split(",").map((str) => str.trim()); // Split by commas and trim whitespace
-            setFilters((prevFilters: FilterState) => ({
-              ...prevFilters,
-              text_lin: listOfStrings, // Directly update the text_lin filter with the list of strings
-            }));
-          }}
-        />
       </Grid>
       <Grid item xs={12}>
         <GmailTreeViewWithText
