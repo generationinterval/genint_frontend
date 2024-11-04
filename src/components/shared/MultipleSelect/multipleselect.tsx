@@ -8,6 +8,7 @@ import FormControl from "@mui/material/FormControl";
 import Select, { SelectChangeEvent } from "@mui/material/Select";
 import Chip from "@mui/material/Chip";
 import { useId } from "react";
+import Divider from "@mui/material/Divider"; // Import Divider
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -23,12 +24,12 @@ const MenuProps = {
 
 function getStyles(
   name: string,
-  selectedNames: readonly string[],
+  selectedValues: readonly string[],
   theme: Theme
 ) {
   return {
     fontWeight:
-      selectedNames.indexOf(name) === -1
+      selectedValues.indexOf(name) === -1
         ? theme.typography.fontWeightRegular
         : theme.typography.fontWeightMedium,
   };
@@ -54,18 +55,25 @@ const MultipleSelectChip: React.FC<MultipleSelectChipProps> = ({
   menuWidth = DEFAULT_MENU_WIDTH,
 }) => {
   const theme = useTheme();
-  const [selectedNames, setSelectedNames] = React.useState<string[]>(
-    selectedValues || []
-  );
 
-  const handleChange = (event: SelectChangeEvent<typeof selectedNames>) => {
+  const handleChange = (event: SelectChangeEvent<string[]>) => {
     const {
       target: { value },
     } = event;
-    const newSelectedNames =
-      typeof value === "string" ? value.split(",") : value;
-    setSelectedNames(newSelectedNames);
-    onChange(newSelectedNames);
+
+    const rawValues = typeof value === "string" ? value.split(",") : value;
+
+    let newSelectedValues = rawValues.filter(
+      (val) => val !== "__all" && val !== "__none"
+    );
+
+    if (rawValues.includes("__all")) {
+      newSelectedValues = options;
+    } else if (rawValues.includes("__none")) {
+      newSelectedValues = [];
+    }
+
+    onChange(newSelectedValues);
   };
 
   const labelId = useId();
@@ -79,14 +87,14 @@ const MultipleSelectChip: React.FC<MultipleSelectChipProps> = ({
         labelId={labelId}
         id={selectId}
         multiple
-        value={selectedNames}
+        value={selectedValues}
         onChange={handleChange}
         input={
           <OutlinedInput
             id={inputId}
             label={label}
             sx={{
-              padding: 0, // Ensure padding is zero since it's already handled by the inner elements
+              padding: 0,
               borderRadius: 1,
               "& .MuiOutlinedInput-notchedOutline": {
                 border: variant === "text" ? "none" : undefined,
@@ -138,11 +146,14 @@ const MultipleSelectChip: React.FC<MultipleSelectChipProps> = ({
           },
         }}
       >
+        <MenuItem value="__all">Select All</MenuItem>
+        <MenuItem value="__none">Deselect All</MenuItem>
+        <Divider />
         {options.map((option) => (
           <MenuItem
             key={option}
             value={option}
-            style={getStyles(option, selectedNames, theme)}
+            style={getStyles(option, selectedValues, theme)}
           >
             {option}
           </MenuItem>

@@ -30,33 +30,47 @@ import { SelectChangeEvent } from "@mui/material/Select";
 import { checkboxBoxStyles } from "@/assets/styles";
 import { TextField } from "@mui/material";
 import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
-import { b } from "vite/dist/node/types.d-aGj9QkWt";
 
 interface FilterState {
   var_1: string;
   var_1_mapped: string;
   data_1: string[];
+  data_1_mapped: string[];
   reg_1: string[];
+  reg_1_mapped: string[];
   mpp_1: number;
   chrms_1: string[];
+  chrms_1_mapped: string[];
   ancs_1: string[];
+  ancs_1_mapped: string[];
   var_2_1: string;
   var_2_1_mapped: string;
   var_2_2: string;
   var_2_2_mapped: string;
   data_2_1: string[];
+  data_2_1_mapped: string[];
   data_2_2: string[];
+  data_2_2_mapped: string[];
   reg_2_1: string[];
+  reg_2_1_mapped: string[];
   reg_2_2: string[];
+  reg_2_2_mapped: string[];
   mpp_2_1: number;
   mpp_2_2: number;
   chrms_2_1: string[];
+  chrms_2_1_mapped: string[];
   chrms_2_2: string[];
+  chrms_2_2_mapped: string[];
   ancs_2_1: string[];
+  ancs_2_1_mapped: string[];
   ancs_2_2: string[];
+  ancs_2_2_mapped: string[];
   col: string[];
+  col_mapped: string[];
   fac_x: string[];
+  fac_x_mapped: string[];
   fac_y: string[];
+  fac_y_mapped: string[];
   mea_med_1: boolean;
   mea_med_x: boolean;
   mea_med_y: boolean;
@@ -88,7 +102,7 @@ interface SideFilterProps {
   applyFilters: () => Promise<void>;
 }
 
-type MappingKey = keyof typeof variables.mapping;
+type MappingKey = keyof typeof variables.mappingToShort;
 
 const plotOptionsSingle = ["Violin", "Histogram", "Density", "Bar", "Map"];
 const plotOptionsDouble = ["Bar", "2D Density", "Quantiles"];
@@ -100,94 +114,139 @@ const SideFilter: React.FC<SideFilterProps> = ({
   setFilters,
   applyFilters,
 }) => {
-  const handleSingleChangeMapped = (key: keyof FilterState, value: string) => {
-    // Use the mapping based on the key
-    const mappedValue = variables.mapping[value as MappingKey];
-
-    // Set the original and mapped values in the state
-    setFilters((prevFilters: FilterState) => ({
-      ...prevFilters,
-      [key]: value, // Store the original value for display
-      [`${key}_mapped`]: mappedValue, // Store the mapped value for backend
-    }));
+  const mapValues = (values: string | string[]) => {
+    if (Array.isArray(values)) {
+      return values.map((v) => variables.mappingToShort[v as MappingKey]);
+    } else {
+      return variables.mappingToShort[values as MappingKey];
+    }
   };
 
-  const handleSingleChangeUnmapped = (key: keyof FilterState) => {
-    return (
-      event:
-        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-        | SelectChangeEvent<string>,
-      child?: React.ReactNode
-    ) => {
-      // Check if the event is a SelectChangeEvent
-      const value = "target" in event ? event.target.value : event;
+  const handleSingleMap =
+    (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
+      const value = event.target.value;
+      const mappedValue = variables.mappingToShort[value as MappingKey];
 
-      setFilters((prevFilters: FilterState) => ({
+      setFilters((prevFilters) => ({
         ...prevFilters,
-        [key]: value, // update the specific key in the state
+        [key]: value, // Original value for display
+        [`${key}_mapped`]: mappedValue, // Mapped value for backend
       }));
     };
-  };
 
-  const handleFilterChange = (key: keyof FilterState, value: any) => {
-    if (typeof value === "number") {
-      // If the value is a number, it's from the slider
+  const handleSingleNoMap =
+    (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
+      const value = event.target.value;
+
       setFilters((prevFilters: FilterState) => ({
         ...prevFilters,
         [key]: value,
       }));
-    } else if (typeof value === "boolean") {
-      // If the value is a boolean, it's from the checkbox
-      setFilters((prevFilters: FilterState) => ({
-        ...prevFilters,
-        [key]: value,
-      }));
-    } else {
-      // Otherwise, assume it's from a multi-select or single-select input
-      const mappedValue = value.map(
-        (v: string) => variables.mapping[v as MappingKey]
+    };
+
+  const handleMultiMap =
+    (key: keyof FilterState) => (selectedValues: string[]) => {
+      const mappedValues = selectedValues.map(
+        (v) => variables.mappingToShort[v as MappingKey]
       );
 
-      if (key === "col") {
-        const selectedDiscrete = mappedValue.filter((v: string) =>
-          variables.discreteOptions
-            .map((option) => variables.mapping[option as MappingKey])
-            .includes(v)
-        );
-        const selectedContinuous = mappedValue.filter((v: string) =>
-          variables.continuousOptions
-            .map((option) => variables.mapping[option as MappingKey])
-            .includes(v)
-        );
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: selectedValues, // Original values for display
+        [`${key}_mapped`]: mappedValues, // Mapped values for backend
+      }));
+    };
 
-        if (selectedContinuous.length > 1) {
-          alert("You can only select one continuous variable at a time.");
-          return;
-        }
+  const handleMultiNoMap =
+    (key: keyof FilterState) => (selectedValues: string[]) => {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: selectedValues,
+      }));
+    };
 
-        if (selectedDiscrete.length > 0 && selectedContinuous.length > 0) {
-          alert(
-            "You cannot select both discrete and continuous variables at the same time."
-          );
-          return;
-        }
+  const handleCheckbox =
+    (key: keyof FilterState) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: event.target.checked,
+      }));
+    };
 
-        setFilters((prevFilters: FilterState) => ({
-          ...prevFilters,
-          [key]: [...selectedDiscrete, ...selectedContinuous],
-        }));
-      } else {
-        setFilters((prevFilters: FilterState) => ({
-          ...prevFilters,
-          [key]: mappedValue,
-        }));
-      }
+  const handleSlider =
+    (key: keyof FilterState) => (event: Event, newValue: number | number[]) => {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: newValue as number,
+      }));
+    };
+
+  const handleColor = (selectedValues: string[]) => {
+    const mappedValues = selectedValues.map(
+      (v) => variables.mappingToShort[v as MappingKey]
+    );
+
+    const selectedDiscrete = mappedValues.filter((v) =>
+      variables.discreteOptions
+        .map((option) => variables.mappingToShort[option as MappingKey])
+        .includes(v)
+    );
+    const selectedContinuous = mappedValues.filter((v) =>
+      variables.continuousOptions
+        .map((option) => variables.mappingToShort[option as MappingKey])
+        .includes(v)
+    );
+
+    if (selectedContinuous.length > 1) {
+      alert("You can only select one continuous variable at a time.");
+      return;
     }
+
+    if (selectedDiscrete.length > 0 && selectedContinuous.length > 0) {
+      alert(
+        "You cannot select both discrete and continuous variables at the same time."
+      );
+      return;
+    }
+
+    const disableMeanMedian = selectedContinuous.length > 0;
+
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      col: selectedValues, // Original values for display
+      col_mapped: [...selectedDiscrete, ...selectedContinuous], // Mapped values for backend
+      mea_med_1: disableMeanMedian ? false : prevFilters.mea_med_1, // Reset to false if continuous
+      mea_med_x: disableMeanMedian ? false : prevFilters.mea_med_x,
+      mea_med_y: disableMeanMedian ? false : prevFilters.mea_med_y,
+    }));
   };
 
   const options = tabValue === 0 ? plotOptionsSingle : plotOptionsDouble;
 
-  const handleToggleChange = (
+  const handlePlotType = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    const defaultValues = getDefaultValuesForPlot(value);
+
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      plot: value,
+      ...defaultValues,
+    }));
+  };
+  const handleNumberInput =
+    (key: keyof FilterState) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      const numericValue = Number(value);
+
+      setFilters((prevFilters: FilterState) => ({
+        ...prevFilters,
+        [key]: numericValue,
+      }));
+    };
+
+  const handleToggle = (
     event: React.MouseEvent<HTMLElement>,
     newValue: number
   ) => {
@@ -199,45 +258,82 @@ const SideFilter: React.FC<SideFilterProps> = ({
       }));
     }
   };
-  const handleTreeSelectionChange = (selectedItems: string[]) => {
+  const handleTreeSelection = (selectedItems: string[]) => {
     // Update tree_lin with selected tree items
     setFilters((prevFilters: FilterState) => ({
       ...prevFilters,
       tree_lin: selectedItems,
     }));
   };
-  /*   const getDefaultValuesForPlot = (plotType: string): Partial<FilterState> => {
+  const getDefaultValuesForPlot = (plotType: string): Partial<FilterState> => {
     switch (plotType) {
       case "Violin":
         return {
-          data_1: ["DATA", "PDAT"],
-          chrms_1: ["Autosome"],
-          ancs_1: ["All"],
-          mpp_1: 0.5,
-          reg_1: ["EAS", "EUR", "SAS", "OCE", "CAS"],
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          var_1: "Mean Length (bp)",
           var_1_mapped: "len_mea",
-          col: ["reg"],
-          x_axis: "Shared Axis",
-          y_axis: "Free Axis",
-          fac_x: ["dat", "oda"],
+          data_1: ["DATA", "PDAT"],
+          data_1_mapped: ["DATA", "PDAT"],
+          reg_1: [
+            "East Asia",
+            "Europe",
+            "South Asia",
+            "Oceania",
+            "Central Asia",
+          ],
+          reg_1_mapped: ["EAS", "EUR", "SAS", "OCE", "CAS"],
+          mpp_1: 0.5,
+          chrms_1: ["Autosome"],
+          chrms_1_mapped: ["A"],
+          ancs_1: ["All"],
+          ancs_1_mapped: ["All"],
+          col: ["Region"],
+          col_mapped: ["reg"],
+          fac_x: ["Dataset", "Original dataset"],
+          fac_x_mapped: ["dat", "oda"],
+          fac_y: [],
+          fac_y_mapped: [],
+          mea_med_1: true,
+          y_axis: "Shared Axis",
+          min_y_axis: 0,
+          max_y_axis: 0,
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
         };
       case "Histogram":
         return {
-          data_1: ["DATA", "PDAT"],
-          chrms_1: ["A"],
-          ancs_1: ["All"],
-          mpp_1: 0.5,
-          reg_1: ["EAS", "EUR", "SAS", "OCE", "CAS"],
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          var_1: "Mean Length (bp)",
           var_1_mapped: "len_mea",
-          col: ["reg"],
+          data_1: ["DATA", "PDAT"],
+          data_1_mapped: ["DATA", "PDAT"],
+          reg_1: [
+            "East Asia",
+            "Europe",
+            "South Asia",
+            "Oceania",
+            "Central Asia",
+          ],
+          reg_1_mapped: ["EAS", "EUR", "SAS", "OCE", "CAS"],
+          mpp_1: 0.5,
+          chrms_1: ["Autosome"],
+          chrms_1_mapped: ["A"],
+          ancs_1: ["All"],
+          ancs_1_mapped: ["All"],
+          col: ["Region"],
+          col_mapped: ["reg"],
+          fac_x: ["Dataset"],
+          fac_x_mapped: ["dat"],
+          fac_y: ["Original dataset"],
+          fac_y_mapped: ["oda"],
+          mea_med_1: true,
           n_bins: 50,
-          x_axis: "Shared Axis",
+          x_axis: "Define Range",
+          min_x_axis: 35000,
+          max_x_axis: 95000,
           y_axis: "Free Axis",
-          fac_x: ["dat", "oda"],
+          min_y_axis: 0,
+          max_y_axis: 0,
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
         };
-      case "Map":
+      /* case "Map":
         return {
           map_data: true,
           map_data_rad: 15,
@@ -248,13 +344,13 @@ const SideFilter: React.FC<SideFilterProps> = ({
           map_ind_rad: 3,
           map_lat_jit: 1,
           map_lon_jit: 1,
-        };
+        }; */
 
       default:
         return {};
     }
   };
- */
+
   return (
     <Grid container spacing={2}>
       <Grid item xs={12}>
@@ -263,8 +359,9 @@ const SideFilter: React.FC<SideFilterProps> = ({
       <Grid item xs={12}>
         <ToggleButtonGroup
           value={tabValue}
+          id="dimension-toggle"
           exclusive
-          onChange={handleToggleChange}
+          onChange={handleToggle}
           aria-label="dimension toggle"
           fullWidth
           sx={{
@@ -299,7 +396,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
             id="plot-type-select"
             value={filters.plot} // Bind to the plot state
             label="Plot Types"
-            onChange={handleSingleChangeUnmapped("plot")} // Updated handler
+            onChange={handlePlotType} // Updated handler
           >
             {options.map((option, index) => (
               <MenuItem key={index} value={option}>
@@ -316,7 +413,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
         <Grid item xs={12}>
           <GmailTreeViewWithText
             selectedItems={filters.tree_lin}
-            onSelectedItemsChange={handleTreeSelectionChange} // Handle multiselect in tree
+            onSelectedItemsChange={handleTreeSelection} // Handle multiselect in tree
           />
         </Grid>
       </>
@@ -325,15 +422,13 @@ const SideFilter: React.FC<SideFilterProps> = ({
           {tabValue === 0 && (
             <Grid item xs={12}>
               <FormControl fullWidth sx={{ mb: 1 }}>
-                <InputLabel id="variable-select-label">Variable</InputLabel>
+                <InputLabel id="var_1_select-label">Variable</InputLabel>
                 <Select
-                  labelId="variable-select-label"
-                  id="variable-select"
+                  labelId="var_1_select-label"
+                  id="var_1_select"
                   value={filters.var_1} // Bind to the original value for display
                   label="Variable"
-                  onChange={(event: SelectChangeEvent<string>) =>
-                    handleSingleChangeMapped("var_1", event.target.value)
-                  }
+                  onChange={handleSingleMap("var_1")}
                 >
                   {variables.options_all.map((option, index) => (
                     <MenuItem key={index} value={option}>
@@ -345,19 +440,17 @@ const SideFilter: React.FC<SideFilterProps> = ({
               {filters.plot !== "Map" && (
                 <Box sx={checkboxBoxStyles}>
                   <FormControlLabel
-                    value="bottom"
                     control={
                       <Checkbox
                         checked={filters.mea_med_1}
                         size="small"
-                        onChange={(event) =>
-                          handleFilterChange("mea_med_1", event.target.checked)
-                        }
+                        onChange={handleCheckbox("mea_med_1")}
+                        disabled={filters.col.some((col) =>
+                          variables.continuousOptions.includes(col)
+                        )} // Disable when continuous variable is selected
                       />
                     }
                     label="Mean/Median"
-                    labelPlacement="end"
-                    sx={{ width: "100%" }}
                   />
                 </Box>
               )}
@@ -366,34 +459,28 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 options={datasets.options}
                 label="Datasets"
                 selectedValues={filters.data_1}
-                onChange={(newValues) =>
-                  handleFilterChange("data_1", newValues)
-                }
+                onChange={handleMultiMap("data_1")}
               />
               <MultipleSelectChip
                 sx={{ mb: 1, mt: 1 }}
                 options={ancestries.options}
                 label="Ancestries"
                 selectedValues={filters.ancs_1}
-                onChange={(newValues) =>
-                  handleFilterChange("ancs_1", newValues)
-                }
+                onChange={handleMultiMap("ancs_1")}
               />
               <MultipleSelectChip
                 sx={{ mb: 1, mt: 1 }}
                 options={chrms_discrete.options}
                 label="Chromosomes"
                 selectedValues={filters.chrms_1}
-                onChange={(newValues) =>
-                  handleFilterChange("chrms_1", newValues)
-                }
+                onChange={handleMultiMap("chrms_1")}
               />
               <MultipleSelectChip
                 sx={{ mb: 1, mt: 1 }}
                 options={regions.options}
                 label="Region"
                 selectedValues={filters.reg_1}
-                onChange={(newValues) => handleFilterChange("reg_1", newValues)}
+                onChange={handleMultiMap("reg_1")}
               />
               <Box
                 sx={{
@@ -413,9 +500,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 </Typography>
                 <Slider
                   value={filters.mpp_1}
-                  onChange={(event, newValue) =>
-                    handleFilterChange("mpp_1", newValue as number)
-                  }
+                  onChange={handleSlider("mpp_1")}
                   aria-labelledby="discrete-slider"
                   valueLabelDisplay="auto"
                   step={0.05}
@@ -439,9 +524,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     id="plot-type-select"
                     value={filters.var_2_1}
                     label="Plot Types"
-                    onChange={(event: SelectChangeEvent<string>) =>
-                      handleSingleChangeMapped("var_2_1", event.target.value)
-                    }
+                    onChange={handleSingleMap("var_2_1")}
                   >
                     {variables.options_all.map((option, index) => (
                       <MenuItem key={index} value={option}>
@@ -457,9 +540,10 @@ const SideFilter: React.FC<SideFilterProps> = ({
                       <Checkbox
                         checked={filters.mea_med_x}
                         size="small"
-                        onChange={(event) =>
-                          handleFilterChange("mea_med_x", event.target.checked)
-                        }
+                        onChange={handleCheckbox("mea_med_x")}
+                        disabled={filters.col_mapped.some((col) =>
+                          variables.continuousOptions.includes(col)
+                        )} // Disable when continuous variable is selected
                       />
                     }
                     label="Mean/Median X"
@@ -467,41 +551,34 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     sx={{ width: "100%" }}
                   />
                 </Box>
+
                 <MultipleSelectChip
                   sx={{ mb: 1, mt: 1 }}
                   options={datasets.options}
                   label="Datasets in X"
                   selectedValues={filters.data_2_1}
-                  onChange={(newValues) =>
-                    handleFilterChange("data_2_1", newValues)
-                  }
+                  onChange={handleMultiMap("data_2_1")}
                 />
                 <MultipleSelectChip
                   sx={{ mb: 1, mt: 1 }}
                   options={ancestries.options}
                   label="Ancestries in X"
                   selectedValues={filters.ancs_2_1}
-                  onChange={(newValues) =>
-                    handleFilterChange("ancs_2_1", newValues)
-                  }
+                  onChange={handleMultiMap("ancs_2_1")}
                 />
                 <MultipleSelectChip
                   sx={{ mb: 1, mt: 1 }}
                   options={chrms_discrete.options}
                   label="Chromosomes in X"
                   selectedValues={filters.chrms_2_1}
-                  onChange={(newValues) =>
-                    handleFilterChange("chrms_2_1", newValues)
-                  }
+                  onChange={handleMultiMap("chrms_2_1")}
                 />
                 <MultipleSelectChip
                   sx={{ mb: 1, mt: 1 }}
                   options={regions.options}
                   label="Region in X"
                   selectedValues={filters.reg_2_1}
-                  onChange={(newValues) =>
-                    handleFilterChange("reg_2_1", newValues)
-                  }
+                  onChange={handleMultiMap("reg_2_1")}
                 />
                 <Box
                   sx={{
@@ -521,9 +598,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   </Typography>
                   <Slider
                     value={filters.mpp_2_1}
-                    onChange={(event, newValue) =>
-                      handleFilterChange("mpp_2_1", newValue as number)
-                    }
+                    onChange={handleSlider("mpp_2_1")}
                     aria-labelledby="discrete-slider"
                     valueLabelDisplay="auto"
                     step={0.05}
@@ -545,9 +620,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     id="plot-type-select"
                     value={filters.var_2_2}
                     label="Plot Types"
-                    onChange={(event: SelectChangeEvent<string>) =>
-                      handleSingleChangeMapped("var_2_2", event.target.value)
-                    }
+                    onChange={handleSingleMap("var_2_2")}
                   >
                     {variables.options_all.map((option, index) => (
                       <MenuItem key={index} value={option}>
@@ -563,9 +636,10 @@ const SideFilter: React.FC<SideFilterProps> = ({
                       <Checkbox
                         checked={filters.mea_med_y}
                         size="small"
-                        onChange={(event) =>
-                          handleFilterChange("mea_med_y", event.target.checked)
-                        }
+                        onChange={handleCheckbox("mea_med_y")}
+                        disabled={filters.col_mapped.some((col) =>
+                          variables.continuousOptions.includes(col)
+                        )} // Disable when continuous variable is selected
                       />
                     }
                     label="Mean/Median Y"
@@ -578,36 +652,28 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   options={datasets.options}
                   label="Datasets in Y"
                   selectedValues={filters.data_2_2}
-                  onChange={(newValues) =>
-                    handleFilterChange("data_2_2", newValues)
-                  }
+                  onChange={handleMultiMap("data_2_2")}
                 />
                 <MultipleSelectChip
                   sx={{ mb: 1, mt: 1 }}
                   options={ancestries.options}
                   label="Ancestries in Y"
                   selectedValues={filters.ancs_2_2}
-                  onChange={(newValues) =>
-                    handleFilterChange("ancs_2_2", newValues)
-                  }
+                  onChange={handleMultiMap("ancs_2_2")}
                 />
                 <MultipleSelectChip
                   sx={{ mb: 1, mt: 1 }}
                   options={chrms_discrete.options}
                   label="Chromosomes in Y"
                   selectedValues={filters.chrms_2_2}
-                  onChange={(newValues) =>
-                    handleFilterChange("chrms_2_2", newValues)
-                  }
+                  onChange={handleMultiMap("chrms_2_2")}
                 />
                 <MultipleSelectChip
                   sx={{ mb: 1, mt: 1 }}
                   options={regions.options}
                   label="Region in Y"
                   selectedValues={filters.reg_2_2}
-                  onChange={(newValues) =>
-                    handleFilterChange("reg_2_2", newValues)
-                  }
+                  onChange={handleMultiMap("reg_2_2")}
                 />
                 <Box
                   sx={{
@@ -627,9 +693,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   </Typography>
                   <Slider
                     value={filters.mpp_2_2}
-                    onChange={(event, newValue) =>
-                      handleFilterChange("mpp_2_2", newValue as number)
-                    }
+                    onChange={handleSlider("mpp_2_2")}
                     aria-labelledby="discrete-slider"
                     valueLabelDisplay="auto"
                     step={0.05}
@@ -655,27 +719,31 @@ const SideFilter: React.FC<SideFilterProps> = ({
           <>
             <MultipleSelectChip
               sx={{ mb: 1 }}
-              options={[
-                ...variables.discreteOptions,
-                ...variables.continuousOptions,
-              ]}
+              options={
+                filters.plot === "Violin"
+                  ? variables.discreteOptions
+                  : [
+                      ...variables.discreteOptions,
+                      ...variables.continuousOptions,
+                    ]
+              }
               label="Color by"
               selectedValues={filters.col}
-              onChange={(newValues) => handleFilterChange("col", newValues)}
+              onChange={handleColor}
             />
             <MultipleSelectChip
               sx={{ mb: 1, mt: 1 }}
               options={variables.discreteOptions}
               label="Facet in X"
               selectedValues={filters.fac_x}
-              onChange={(newValues) => handleFilterChange("fac_x", newValues)}
+              onChange={handleMultiMap("fac_x")}
             />
             <MultipleSelectChip
               sx={{ mb: 1, mt: 1 }}
               options={variables.discreteOptions}
               label="Facet in Y"
               selectedValues={filters.fac_y}
-              onChange={(newValues) => handleFilterChange("fac_y", newValues)}
+              onChange={handleMultiMap("fac_y")}
             />
             {filters.plot !== "Violin" && (
               <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
@@ -685,7 +753,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   id="x_axis_options"
                   value={filters.x_axis} // Bind to the plot state
                   label="X Axis Options"
-                  onChange={handleSingleChangeUnmapped("x_axis")} // Updated handler
+                  onChange={handleSingleNoMap("x_axis")} // Updated handler
                 >
                   {axis.options.map((option, index) => (
                     <MenuItem key={index} value={option}>
@@ -711,17 +779,15 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   sx={{ width: "49%" }}
                   label="Min X"
                   inputProps={{ type: "number" }}
-                  onChange={(event) =>
-                    handleSingleChangeUnmapped("min_x_axis")(event)
-                  }
+                  value={filters.min_x_axis}
+                  onChange={handleNumberInput("min_x_axis")}
                 />
                 <TextField
                   sx={{ width: "49%" }}
                   label="Max X"
                   inputProps={{ type: "number" }}
-                  onChange={(event) =>
-                    handleSingleChangeUnmapped("max_x_axis")(event)
-                  }
+                  value={filters.max_x_axis}
+                  onChange={handleNumberInput("max_x_axis")}
                 />
               </Box>
             )}
@@ -733,7 +799,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 id="y_axis_options"
                 value={filters.y_axis} // Bind to the plot state
                 label="Y Axis Options"
-                onChange={handleSingleChangeUnmapped("y_axis")} // Updated handler
+                onChange={handleSingleNoMap("y_axis")} // Updated handler
               >
                 {axis.options.map((option, index) => (
                   <MenuItem key={index} value={option}>
@@ -759,17 +825,15 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   sx={{ width: "49%" }}
                   label="Min Y"
                   inputProps={{ type: "number" }}
-                  onChange={(event) =>
-                    handleSingleChangeUnmapped("min_y_axis")(event)
-                  }
+                  value={filters.min_y_axis}
+                  onChange={handleNumberInput("min_y_axis")}
                 />
                 <TextField
                   sx={{ width: "49%" }}
                   label="Max Y"
                   inputProps={{ type: "number" }}
-                  onChange={(event) =>
-                    handleSingleChangeUnmapped("max_y_axis")(event)
-                  }
+                  value={filters.max_y_axis}
+                  onChange={handleNumberInput("max_y_axis")}
                 />
               </Box>
             )}
@@ -790,9 +854,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 </Typography>
                 <Slider
                   value={filters.n_bins}
-                  onChange={(event, newValue) =>
-                    handleFilterChange("n_bins", newValue as number)
-                  }
+                  onChange={handleSlider("n_bins")}
                   aria-labelledby="discrete-slider"
                   valueLabelDisplay="auto"
                   step={1}
@@ -814,9 +876,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   <Checkbox
                     checked={filters.map_data}
                     size="small"
-                    onChange={(event) =>
-                      handleFilterChange("map_data", event.target.checked)
-                    }
+                    onChange={handleCheckbox("map_data")}
                   />
                 }
                 label="Points for Dataset"
@@ -829,9 +889,8 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 sx={{ width: "100%", mb: 1, mt: 1 }}
                 label="Radius for Dataset points"
                 inputProps={{ type: "number" }}
-                onChange={(event) =>
-                  handleSingleChangeUnmapped("map_data_rad")(event)
-                }
+                value={filters.map_data_rad}
+                onChange={handleNumberInput("map_data_rad")}
               />
             )}
             <Box sx={checkboxBoxStyles}>
@@ -841,9 +900,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   <Checkbox
                     checked={filters.map_reg}
                     size="small"
-                    onChange={(event) =>
-                      handleFilterChange("map_reg", event.target.checked)
-                    }
+                    onChange={handleCheckbox("map_reg")}
                   />
                 }
                 label="Points for Region"
@@ -856,9 +913,8 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 sx={{ width: "100%", mb: 1, mt: 1 }}
                 label="Radius for Region points"
                 inputProps={{ type: "number" }}
-                onChange={(event) =>
-                  handleSingleChangeUnmapped("map_reg_rad")(event)
-                }
+                value={filters.map_reg_rad}
+                onChange={handleNumberInput("map_reg_rad")}
               />
             )}
             <Box sx={checkboxBoxStyles}>
@@ -868,9 +924,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   <Checkbox
                     checked={filters.map_pop}
                     size="small"
-                    onChange={(event) =>
-                      handleFilterChange("map_pop", event.target.checked)
-                    }
+                    onChange={handleCheckbox("map_pop")}
                   />
                 }
                 label="Points for Population"
@@ -883,18 +937,16 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 sx={{ width: "100%", mb: 1, mt: 1 }}
                 label="Radius for Population points"
                 inputProps={{ type: "number" }}
-                onChange={(event) =>
-                  handleSingleChangeUnmapped("map_pop_rad")(event)
-                }
+                value={filters.map_pop_rad}
+                onChange={handleNumberInput("map_pop_rad")}
               />
             )}
             <TextField
               sx={{ width: "100%", mb: 1, mt: 1 }}
               label="Radius for Individual points"
               inputProps={{ type: "number" }}
-              onChange={(event) =>
-                handleSingleChangeUnmapped("map_ind_rad")(event)
-              }
+              value={filters.map_ind_rad}
+              onChange={handleNumberInput("map_ind_rad")}
             />{" "}
             <Box
               sx={{
@@ -923,9 +975,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 </Typography>
                 <Slider
                   value={filters.map_lat_jit}
-                  onChange={(event, newValue) =>
-                    handleFilterChange("map_lat_jit", newValue as number)
-                  }
+                  onChange={handleSlider("map_lat_jit")}
                   aria-labelledby="discrete-slider"
                   valueLabelDisplay="auto"
                   step={1}
@@ -951,9 +1001,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 </Typography>
                 <Slider
                   value={filters.map_lon_jit}
-                  onChange={(event, newValue) =>
-                    handleFilterChange("map_lon_jit", newValue as number)
-                  }
+                  onChange={handleSlider("map_lon_jit")}
                   aria-labelledby="discrete-slider"
                   valueLabelDisplay="auto"
                   step={1}

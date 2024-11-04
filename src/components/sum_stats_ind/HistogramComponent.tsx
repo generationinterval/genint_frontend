@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
-import { c } from "vite/dist/node/types.d-aGj9QkWt";
 
 export interface DataPoint {
   ind: string;
@@ -31,7 +30,7 @@ export interface DataPoint {
   ancAFR: number;
   ancEUR: number;
   ancOCE: number;
-  fac_x: string | null; // Assuming fac_x and fac_y might be null
+  fac_x: string | null;
   fac_y: string | null;
   color: string;
 }
@@ -49,6 +48,288 @@ type HistogramPlotProps = {
   y_axis: string;
   min_y_axis: number;
   max_y_axis: number;
+};
+
+const createColorScale = (
+  data: DataPoint[],
+  col: string[]
+): {
+  getColor: (d: DataPoint) => string;
+  legendData: { label: string; color: string; extent?: [number, number] }[];
+  discreteOrContinuous: string;
+  globalColorOrder: string[];
+} => {
+  let getColor: (d: DataPoint) => string;
+  let legendData: { label: string; color: string; extent?: [number, number] }[];
+  let discreteOrContinuous: string;
+  let globalColorOrder: string[] = [];
+
+  if (col.length === 1 && col[0] === "") {
+    const defaultColor = "steelblue";
+    getColor = () => defaultColor;
+    legendData = [{ label: "Default Color", color: defaultColor }];
+    discreteOrContinuous = "default";
+    globalColorOrder = [defaultColor]; // Only one color, steelblue
+  }
+  // Rule 2: If the variable in col is continuous, create a continuous colormap
+  else if (variables.continuousOptionsShort.includes(col[0])) {
+    let extent = d3.extent(data, (d) => +d[col[0] as keyof DataPoint]!);
+    const isExtentValid = extent[0] !== undefined && extent[1] !== undefined;
+    const colorScale = d3
+      .scaleSequential(d3.interpolateViridis)
+      .domain(extent as [number, number]);
+
+    getColor = (d) => {
+      const value = d[col[0] as keyof DataPoint];
+      return value !== null && value !== undefined
+        ? colorScale(+value)
+        : "steelblue"; // Fallback color if value is undefined
+    };
+
+    legendData = isExtentValid
+      ? [
+          { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
+          { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
+        ]
+      : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
+    discreteOrContinuous = "continuous";
+    globalColorOrder = []; // Continuous variables don't have a strict "order" per se
+  }
+  // Rule 3: If the variable in col is discrete, create a categorical colormap
+  else {
+    const uniqueValues = [
+      ...new Set(
+        data
+          .map((d) => d.color) // Extract "color" property from each DataPoint
+          .filter((color) => color !== null && color !== undefined) // Filter out null and undefined values
+          .map(String) // Convert all color values to strings (in case they're not)
+      ),
+    ];
+
+    const colorScale = d3
+      .scaleOrdinal(d3.schemeCategory10)
+      .domain(uniqueValues);
+
+    getColor = (d) => {
+      const value = d.color;
+      return value !== null && value !== undefined
+        ? colorScale(String(value))
+        : "steelblue"; // Fallback color if value is undefined
+    };
+
+    legendData = uniqueValues.map((value) => ({
+      label: String(value),
+      color: colorScale(value),
+    }));
+    discreteOrContinuous = "discrete";
+    globalColorOrder = uniqueValues; // Set global order for categorical values
+  }
+
+  return { getColor, legendData, discreteOrContinuous, globalColorOrder };
+};
+
+const drawHistogram = (
+  facetGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
+  data: DataPoint[],
+  xScale: d3.ScaleLinear<number, number>,
+  yScale: d3.ScaleLinear<number, number>,
+  y_axis: string,
+  min_y_axis: number,
+  max_y_axis: number,
+  plotHeight: number,
+  plotWidth: number,
+  var_x: string,
+  col: string[],
+  n_bins: number,
+  getColor: (d: DataPoint) => string,
+  discreteOrContinuous: string,
+  globalColorOrder: string[], // Pass global color order
+  showMeanMedian: boolean,
+  title: string,
+  x_label: string,
+  y_label: string
+) => {
+  // Create histogram bins
+  const histogram = d3
+    .bin<DataPoint, number>()
+    .value((d) => d[var_x as keyof DataPoint] as number)!
+    .domain(xScale.domain() as [number, number])
+    .thresholds(n_bins);
+
+  const bins = histogram(data);
+  if (y_axis === "Define Range") {
+    yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
+  } else if (y_axis === "Shared Axis") {
+    throw new Error("Shared Axis is not supported for y-axis.");
+  } else if (y_axis === "Free Axis") {
+    yScale
+      .domain([
+        0,
+        d3.max(bins, (d) => d.length)! + 0.05 * d3.max(bins, (d) => d.length)!,
+      ])
+      .range([plotHeight, 0]);
+  }
+
+  // Draw the histogram bars
+  bins.forEach((bin) => {
+    const colorGroups = d3.group(bin, (d: DataPoint) => getColor(d));
+    const totalPoints = bin.length;
+    let accumulatedHeight = 0;
+
+    let sortedColorGroups: [string, DataPoint[]][] = [];
+
+    if (discreteOrContinuous === "discrete") {
+      // Sort by the global color order, not by the current bin
+      sortedColorGroups = Array.from(colorGroups).sort(
+        ([colorA, groupDataA], [colorB, groupDataB]) => {
+          const dataColorA = groupDataA[0].color; // Accessing the color of the first DataPoint
+          const dataColorB = groupDataB[0].color;
+
+          const indexA = globalColorOrder.indexOf(dataColorA);
+          const indexB = globalColorOrder.indexOf(dataColorB);
+
+          return (
+            (indexA === -1 ? Infinity : indexA) -
+            (indexB === -1 ? Infinity : indexB)
+          );
+        }
+      );
+    } else if (discreteOrContinuous === "continuous") {
+      // Sort by the continuous values (increasing order)
+      sortedColorGroups = Array.from(colorGroups).sort(
+        ([colorA], [colorB]) => +colorA - +colorB // Assuming color is a numerical continuous value
+      );
+    } else {
+      // No color column provided, using a single default color for all groups
+      const defaultColor = "steelblue"; // Default color if no specific color column
+      getColor = () => defaultColor;
+
+      // Sort by default with a single group
+      sortedColorGroups = Array.from(colorGroups);
+    }
+    // Iterate over color groups within each bin
+    sortedColorGroups.forEach(([color, groupData]) => {
+      const proportion = groupData.length / totalPoints;
+      const binHeight = proportion * (yScale(0) - yScale(bin.length));
+
+      facetGroup
+        .append("rect")
+        .attr("x", 1)
+        .attr(
+          "transform",
+          `translate(${xScale(bin.x0!)}, ${
+            yScale(bin.length) + accumulatedHeight
+          })`
+        )
+        .attr("width", xScale(bin.x1!) - xScale(bin.x0!) - 1)
+        .attr("height", binHeight)
+        .attr("fill", getColor(groupData[0]))
+        .attr("stroke", "none");
+
+      accumulatedHeight += binHeight;
+    });
+  });
+  facetGroup
+    .append("g")
+    .attr("transform", `translate(0,${plotHeight})`)
+    .call(d3.axisBottom(xScale));
+  facetGroup
+    .append("text")
+    .attr("x", plotWidth / 2)
+    .attr("y", plotHeight + 35) // Adjust this to move the label below the axis
+    .attr("text-anchor", "middle")
+    .text(x_label);
+
+  // Add Y Axis to the facet
+  facetGroup.append("g").call(d3.axisLeft(yScale));
+  facetGroup
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -plotHeight / 2) // Center the Y axis title along the axis
+    .attr("y", -30) // Adjust this to position the label to the left of the axis
+    .attr("text-anchor", "middle")
+    .text("Counts");
+
+  facetGroup
+    .append("text")
+    .attr("x", plotWidth / 2)
+    .attr("y", -5)
+    .attr("text-anchor", "middle")
+    .text(`${title}`);
+
+  // Draw mean and median lines if showMeanMedian is true
+  if (showMeanMedian) {
+    // Group data by color
+    const colorGroups = d3.group(data, (d) => getColor(d));
+
+    colorGroups.forEach((groupData, color) => {
+      const container = d3.select("#histogram-container"); // Assuming you have a div with this id
+      const tooltip = container.append("div").attr("class", "tooltip");
+
+      const mean = d3.mean(
+        groupData,
+        (d) => d[var_x as keyof DataPoint] as number
+      )!;
+      const median = d3.median(
+        groupData,
+        (d) => d[var_x as keyof DataPoint] as number
+      )!;
+      facetGroup
+        .append("line")
+        .attr("x1", xScale(mean))
+        .attr("x2", xScale(mean))
+        .attr("y1", yScale.range()[0])
+        .attr("y2", yScale.range()[1])
+        .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "4,4") // Striped pattern for mean
+        .on("mouseenter", (event) => {
+          tooltip.transition().duration(200).style("opacity", 1); // Show tooltip
+          tooltip.html(
+            `<strong>Group:</strong> ${
+              groupData[0].color
+            }<br/><strong>Mean:</strong> ${mean.toFixed(2)}`
+          );
+        })
+        .on("mousemove", (event) => {
+          const [mouseX, mouseY] = d3.pointer(event, container.node()); // Ensure the mouse position is relative to the container
+          tooltip
+            .style("left", `${mouseX + 10}px`)
+            .style("top", `${mouseY - 28}px`);
+        })
+        .on("mouseleave", () => {
+          tooltip.transition().duration(200).style("opacity", 0); // Hide tooltip
+        });
+
+      // Draw median line
+      facetGroup
+        .append("line")
+        .attr("x1", xScale(median))
+        .attr("x2", xScale(median))
+        .attr("y1", yScale.range()[0])
+        .attr("y2", yScale.range()[1])
+        .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "2,4")
+        .on("mouseenter", (event) => {
+          tooltip.transition().duration(200).style("opacity", 1);
+          tooltip.html(
+            `<strong>Group:</strong> ${
+              groupData[0].color
+            }<br/><strong>Median:</strong> ${median.toFixed(2)}`
+          );
+        })
+        .on("mousemove", (event) => {
+          const [mouseX, mouseY] = d3.pointer(event, container.node());
+          tooltip
+            .style("left", `${mouseX + 10}px`)
+            .style("top", `${mouseY - 28}px`);
+        })
+        .on("mouseleave", () => {
+          tooltip.transition().duration(200).style("opacity", 0);
+        });
+    });
+  }
 };
 
 const HistogramComponent: React.FC<HistogramPlotProps> = ({
@@ -85,7 +366,18 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
         max_y_axis
       );
     }
-  }, [data, col, var_1_mapped, n_bins]); // Re-render the histogram when any prop changes
+  }, [
+    data,
+    mea_med_1,
+    x_axis,
+    min_x_axis,
+    max_x_axis,
+    y_axis,
+    min_y_axis,
+    max_y_axis,
+    var_1_mapped,
+    n_bins,
+  ]);
 
   const handleResize = () => {
     if (containerRef.current && svgRef.current && data) {
@@ -110,18 +402,16 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
   };
 
   useEffect(() => {
-    // Attach resize event listener
     window.addEventListener("resize", handleResize);
-    // Run resize handler once to set initial sizes
+
     handleResize();
-    // Cleanup event listener on component unmount
+
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [data]); // Depend on plotData to ensure resizing occurs after data is loaded
+  }, [data]);
 
   useEffect(() => {
-    // Handle resize when the sidebar visibility changes
     handleResize();
   }, [isSidebarVisible]);
   return (
@@ -139,7 +429,7 @@ export default HistogramComponent;
 const fullHistogram = (
   svgElement: SVGSVGElement,
   data: DataPoint[],
-  col: string[] | null, // Color can be null or a list
+  col: string[],
   var_x: string,
   n_bins: number,
   showMeanMedian: boolean,
@@ -150,7 +440,6 @@ const fullHistogram = (
   min_y_axis: number,
   max_y_axis: number
 ) => {
-  // Clear any existing content in the SVG
   d3.select(svgElement).selectAll("*").remove();
 
   const container = svgElement.parentElement;
@@ -161,7 +450,8 @@ const fullHistogram = (
   const height = container
     ? container.clientHeight - margin.top - margin.bottom
     : 600;
-
+  const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
+    createColorScale(data, col);
   // Extract unique values for faceting directly from the data
   const uniqueFacX = [...new Set(data.map((d) => d.fac_x))].filter(
     (val) => val !== null
@@ -197,108 +487,107 @@ const fullHistogram = (
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  let getColor: (d: DataPoint) => string;
-  let legendData: { label: string; color: string }[] = [];
-
-  if (col === null) {
-    // If no color column is provided, use a single default color
-    const defaultColor = "steelblue"; // You can change this to any color you prefer
-    getColor = () => defaultColor;
-    legendData = [{ label: "Default Color", color: defaultColor }];
-  } else if (col.length > 1) {
-    const allDiscrete = col.every((c) =>
-      variables.discreteOptionsShort.includes(c)
-    );
-    if (allDiscrete) {
-      const uniqueColors = [...new Set(data.map((d) => d.color))];
-      const colorScale = d3
-        .scaleOrdinal(d3.schemeCategory10)
-        .domain(uniqueColors);
-
-      getColor = (d: DataPoint) => colorScale(d.color);
-      legendData = uniqueColors.map((color) => ({
-        label: color,
-        color: colorScale(color),
-      }));
-    } else {
-      throw new Error(
-        "Color cannot be continuous and discrete or multiple continuous."
-      );
-    }
-  } else if (col.length === 1) {
-    const mappedCol =
-      variables.mapping[col[0] as keyof typeof variables.mapping];
-
-    if (variables.discreteOptionsShort.includes(col[0])) {
-      const uniqueColors = [...new Set(data.map((d) => d.color))];
-      const colorScale = d3
-        .scaleOrdinal(d3.schemeCategory10)
-        .domain(uniqueColors);
-
-      getColor = (d: DataPoint) => colorScale(d.color);
-      legendData = uniqueColors.map((color) => ({
-        label: color,
-        color: colorScale(color),
-      }));
-    } else if (variables.continuousOptions.includes(col[0]!)) {
-      // Safely assert that mappedCol is not null or undefined
-      const colDomain = d3.extent(
-        data,
-        (d) => +d[mappedCol as keyof DataPoint]!
-      );
-      const colorScale = d3
-        .scaleSequential(d3.interpolateViridis)
-        .domain(colDomain as [number, number]);
-
-      getColor = (d: DataPoint) =>
-        colorScale(+d[mappedCol as keyof DataPoint]!);
-      legendData = [
-        { label: String(colDomain![0]), color: colorScale(colDomain![0]!) },
-        { label: String(colDomain![1]), color: colorScale(colDomain![1]!) },
-      ];
-    } else {
-      throw new Error("Invalid color mapping provided.");
-    }
-  } else {
-    throw new Error(
-      "Color cannot be continuous and discrete or multiple continuous."
-    );
-  }
   const xScale = d3.scaleLinear().range([0, plotWidth]);
 
   const yScale = d3.scaleLinear().range([plotHeight, 0]);
 
-  // Calculate the width of each legend entry (rectangle + text space)
-  const itemWidth = 100; // Adjust based on the size of your legend items
+  if (discreteOrContinuous === "continuous") {
+    const legendWidth = 400; // Width of the gradient
+    const legendHeight = 20; // Height of the gradient
+    const legend = svg.append("g").attr(
+      "transform",
+      `translate(${width / 2 - legendWidth / 2}, ${height - 20})` // Center horizontally and place at the bottom
+    );
+    const extent = legendData[0].extent;
 
-  // Append the legend and place it at the bottom center of the SVG
-  const legend = svg.append("g").attr(
-    "transform",
-    `translate(${(width - legendData.length * itemWidth) / 2}, ${height - 20})` // Center horizontally and place at the bottom
-  );
+    if (extent) {
+      // Create a color scale with interpolateViridis
+      const colorScale = d3
+        .scaleSequential()
+        .domain(extent) // Set the domain to the extent values
+        .interpolator(d3.interpolateViridis);
 
-  // Add the legend items (rectangles)
-  legend
-    .selectAll("rect")
-    .data(legendData)
-    .enter()
-    .append("rect")
-    .attr("x", (d, i) => i * itemWidth) // Horizontal positioning
-    .attr("y", 0) // Align all items vertically
-    .attr("width", 18)
-    .attr("height", 18)
-    .style("fill", (d) => d.color);
+      // Define a gradient
+      const gradient = legend
+        .append("defs")
+        .append("linearGradient")
+        .attr("id", "color-gradient")
+        .attr("x1", "0%")
+        .attr("x2", "100%")
+        .attr("y1", "0%")
+        .attr("y2", "0%");
 
-  // Add the legend labels (text)
-  legend
-    .selectAll("text")
-    .data(legendData)
-    .enter()
-    .append("text")
-    .attr("x", (d, i) => i * itemWidth + 24) // Position text next to the rectangle
-    .attr("y", 9) // Center the text vertically with the rectangle
-    .attr("dy", ".35em")
-    .text((d) => d.label);
+      // Add gradient stops
+      const numStops = 10; // Increase this number for smoother gradient
+      for (let i = 0; i <= numStops; i++) {
+        const t = i / numStops; // Calculate the position (0 to 1)
+        gradient
+          .append("stop")
+          .attr("offset", `${t * 100}%`)
+          .attr(
+            "stop-color",
+            colorScale(extent[0] + t * (extent[1] - extent[0]))
+          ); // Interpolated color
+      }
+
+      // Draw the gradient rectangle
+      legend
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", 20) // Positioning it below the min/max labels
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("fill", "url(#color-gradient)");
+
+      // Add min and max labels
+      legend
+        .append("text")
+        .attr("x", 0)
+        .attr("y", 15)
+        .text(`Min: ${extent[0].toFixed(3)}`)
+        .style("font-size", "12px");
+
+      legend
+        .append("text")
+        .attr("x", legendWidth)
+        .attr("y", 15)
+        .attr("text-anchor", "end")
+        .text(`Max: ${extent[1].toFixed(3)}`)
+        .style("font-size", "12px");
+    }
+  } else {
+    // Discrete legend
+    const itemWidth = 100; // Adjust based on your layout
+    const legend = svg.append("g").attr(
+      "transform",
+      `translate(${(width - legendData.length * itemWidth) / 2}, ${
+        height - 20
+      })` // Center horizontally and place at the bottom
+    );
+
+    // Create rectangles for each discrete item
+    legend
+      .selectAll("rect")
+      .data(legendData)
+      .enter()
+      .append("rect")
+      .attr("x", (d, i) => i * itemWidth) // Horizontal positioning
+      .attr("y", 0) // Align all items vertically
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", (d) => d.color);
+
+    // Add the legend labels (text)
+    legend
+      .selectAll("text")
+      .data(legendData)
+      .enter()
+      .append("text")
+      .attr("x", (d, i) => i * itemWidth + 24) // Position text next to the rectangle
+      .attr("y", 9) // Center the text vertically with the rectangle
+      .attr("dy", ".35em")
+      .text((d) => d.label);
+  }
 
   if (facetingRequiredX && facetingRequiredY) {
     // Apply faceting on both fac_x and fac_y
@@ -331,26 +620,6 @@ const fullHistogram = (
             ])
             .range([0, plotWidth]);
         }
-        console.log(x_axis);
-        console.log(xScale.domain());
-        const histogram = d3
-          .bin<DataPoint, number>()
-          .value((d) => d[var_x as keyof DataPoint] as number)!
-          .domain(xScale.domain() as [number, number])
-          .thresholds(n_bins);
-        const bins = histogram(facetData);
-        // Update y-scale domain based on bins
-        if (y_axis === "Define Range") {
-          yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
-        } else if (y_axis === "Shared Axis") {
-          throw new Error("Shared Axis is not supported for y-axis.");
-        } else if (y_axis === "Free Axis") {
-          yScale
-            .domain([0, d3.max(bins, (d) => d.length)!])
-            .range([plotHeight, 0]);
-        }
-
-        // Append a group for each facet
         const facetGroup = svg
           .append("g")
           .attr(
@@ -359,82 +628,33 @@ const fullHistogram = (
               j * plotHeight + j * rowPadding
             })`
           );
-
-        bins.forEach((bin) => {
-          const colorGroups = d3.group(bin, (d: DataPoint) => d.color);
-          const totalPoints = bin.length;
-          let accumulatedHeight = 0;
-
-          // Check if the color is categorical or continuous and sort accordingly
-          let sortedColorGroups: [string, DataPoint[]][] = [];
-          if (col === null) {
-            // If no color column is provided, use a single default color
-            const defaultColor = "steelblue"; // You can change this to any color you prefer
-            getColor = () => defaultColor;
-            legendData = [{ label: "Default Color", color: defaultColor }];
-          } else if (variables.discreteOptionsShort.includes(col[0])) {
-            // Sort by the order of categorical colors in the color scale domain
-            const uniqueColors = [...new Set(data.map((d) => d.color))];
-            sortedColorGroups = Array.from(colorGroups).sort(
-              ([colorA], [colorB]) =>
-                uniqueColors.indexOf(colorA) - uniqueColors.indexOf(colorB)
-            );
-          } else if (variables.continuousOptions.includes(col[0])) {
-            // Sort by the continuous values (increasing order)
-            sortedColorGroups = Array.from(colorGroups).sort(
-              ([colorA], [colorB]) => +colorA - +colorB // Assuming color is a numerical continuous value
-            );
-          }
-
-          // Iterate over the sorted color groups
-          sortedColorGroups.forEach(([color, groupData]) => {
-            const proportion = groupData.length / totalPoints;
-            const binHeight = proportion * (plotHeight - yScale(bin.length));
-
-            facetGroup
-              .append("rect")
-              .attr("x", 1)
-              .attr(
-                "transform",
-                `translate(${xScale(bin.x0!)}, ${
-                  yScale(bin.length) + accumulatedHeight
-                })`
-              )
-              .attr("width", xScale(bin.x1!) - xScale(bin.x0!) - 1)
-              .attr("height", binHeight)
-              .attr("fill", getColor(groupData[0]));
-
-            accumulatedHeight += binHeight;
-          });
-        });
-
-        facetGroup
-          .append("g")
-          .attr("transform", `translate(0,${plotHeight})`)
-          .call(d3.axisBottom(xScale));
-        facetGroup
-          .append("text")
-          .attr("x", plotWidth / 2)
-          .attr("y", plotHeight + 30) // Adjust this to move the label below the axis
-          .attr("text-anchor", "middle")
-          .text(var_x);
-
-        // Add Y Axis to the facet
-        facetGroup.append("g").call(d3.axisLeft(yScale));
-        facetGroup
-          .append("text")
-          .attr("transform", "rotate(-90)")
-          .attr("x", -plotHeight / 2) // Center the Y axis title along the axis
-          .attr("y", -30) // Adjust this to position the label to the left of the axis
-          .attr("text-anchor", "middle")
-          .text("Counts");
-
-        facetGroup
-          .append("text")
-          .attr("x", plotWidth / 2)
-          .attr("y", -5)
-          .attr("text-anchor", "middle")
-          .text(`${facXValue} / ${facYValue}`);
+        const title = `${facXValue} / ${facYValue}`;
+        const x_label =
+          variables.mappingToLong[
+            var_x as keyof typeof variables.mappingToLong
+          ];
+        const y_label = "Counts";
+        drawHistogram(
+          facetGroup,
+          facetData,
+          xScale,
+          yScale,
+          y_axis,
+          min_y_axis,
+          max_y_axis,
+          plotHeight,
+          plotWidth,
+          var_x,
+          col,
+          n_bins,
+          getColor,
+          discreteOrContinuous,
+          globalColorOrder, // Pass the global color order here
+          showMeanMedian,
+          title,
+          x_label,
+          y_label
+        );
       });
     });
   } else if (facetingRequiredX) {
@@ -445,12 +665,17 @@ const fullHistogram = (
       if (x_axis === "Define Range") {
         xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
       } else if (x_axis === "Shared Axis") {
-        xScale
-          .domain([
-            0,
-            d3.max(data, (d) => d[var_x as keyof DataPoint] as number)!,
-          ])
-          .range([0, plotWidth]);
+        const minVal = d3.min(
+          data,
+          (d) => d[var_x as keyof DataPoint] as number
+        )!;
+        const maxVal = d3.max(
+          data,
+          (d) => d[var_x as keyof DataPoint] as number
+        )!;
+        const buffer = (maxVal - minVal) * 0.05;
+
+        xScale.domain([minVal - buffer, maxVal + buffer]).range([0, plotWidth]);
       } else if (x_axis === "Free Axis") {
         xScale
           .domain([
@@ -458,24 +683,6 @@ const fullHistogram = (
             d3.max(facetData, (d) => d[var_x as keyof DataPoint] as number)!,
           ])
           .range([0, plotWidth]);
-      }
-      console.log(x_axis);
-      console.log(xScale.domain());
-      const histogram = d3
-        .bin<DataPoint, number>()
-        .value((d) => d[var_x as keyof DataPoint] as number)!
-        .domain(xScale.domain() as [number, number])
-        .thresholds(n_bins);
-      const bins = histogram(facetData);
-      // Update y-scale domain based on bins
-      if (y_axis === "Define Range") {
-        yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
-      } else if (y_axis === "Shared Axis") {
-        throw new Error("Shared Axis is not supported for y-axis.");
-      } else if (y_axis === "Free Axis") {
-        yScale
-          .domain([0, d3.max(bins, (d) => d.length)!])
-          .range([plotHeight, 0]);
       }
 
       // Append a group for each facet
@@ -485,81 +692,31 @@ const fullHistogram = (
           `
       );
 
-      bins.forEach((bin) => {
-        const colorGroups = d3.group(bin, (d: DataPoint) => d.color);
-        const totalPoints = bin.length;
-        let accumulatedHeight = 0;
-
-        // Check if the color is categorical or continuous and sort accordingly
-        let sortedColorGroups: [string, DataPoint[]][] = [];
-        if (col === null) {
-          // If no color column is provided, use a single default color
-          const defaultColor = "steelblue"; // You can change this to any color you prefer
-          getColor = () => defaultColor;
-          legendData = [{ label: "Default Color", color: defaultColor }];
-        } else if (variables.discreteOptionsShort.includes(col[0])) {
-          // Sort by the order of categorical colors in the color scale domain
-          const uniqueColors = [...new Set(data.map((d) => d.color))];
-          sortedColorGroups = Array.from(colorGroups).sort(
-            ([colorA], [colorB]) =>
-              uniqueColors.indexOf(colorA) - uniqueColors.indexOf(colorB)
-          );
-        } else if (variables.continuousOptions.includes(col[0])) {
-          // Sort by the continuous values (increasing order)
-          sortedColorGroups = Array.from(colorGroups).sort(
-            ([colorA], [colorB]) => +colorA - +colorB // Assuming color is a numerical continuous value
-          );
-        }
-
-        // Iterate over the sorted color groups
-        sortedColorGroups.forEach(([color, groupData]) => {
-          const proportion = groupData.length / totalPoints;
-          const binHeight = proportion * (plotHeight - yScale(bin.length));
-
-          facetGroup
-            .append("rect")
-            .attr("x", 1)
-            .attr(
-              "transform",
-              `translate(${xScale(bin.x0!)}, ${
-                yScale(bin.length) + accumulatedHeight
-              })`
-            )
-            .attr("width", xScale(bin.x1!) - xScale(bin.x0!) - 1)
-            .attr("height", binHeight)
-            .attr("fill", getColor(groupData[0]));
-
-          accumulatedHeight += binHeight;
-        });
-      });
-
-      facetGroup
-        .append("g")
-        .attr("transform", `translate(0,${plotHeight})`)
-        .call(d3.axisBottom(xScale));
-      facetGroup
-        .append("text")
-        .attr("x", plotWidth / 2)
-        .attr("y", plotHeight + 30) // Adjust this to move the label below the axis
-        .attr("text-anchor", "middle")
-        .text(var_x);
-
-      // Add Y Axis to the facet
-      facetGroup.append("g").call(d3.axisLeft(yScale));
-      facetGroup
-        .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("x", -plotHeight / 2) // Center the Y axis title along the axis
-        .attr("y", -30) // Adjust this to position the label to the left of the axis
-        .attr("text-anchor", "middle")
-        .text("Counts");
-
-      facetGroup
-        .append("text")
-        .attr("x", plotWidth / 2)
-        .attr("y", -5)
-        .attr("text-anchor", "middle")
-        .text(`${facXValue}`);
+      const title = `${facXValue}`;
+      const x_label =
+        variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
+      const y_label = "Counts";
+      drawHistogram(
+        facetGroup,
+        facetData,
+        xScale,
+        yScale,
+        y_axis,
+        min_y_axis,
+        max_y_axis,
+        plotHeight,
+        plotWidth,
+        var_x,
+        col,
+        n_bins,
+        getColor,
+        discreteOrContinuous,
+        globalColorOrder, // Pass the global color order here
+        showMeanMedian,
+        title,
+        x_label,
+        y_label
+      );
     });
   } else if (facetingRequiredY) {
     // Apply faceting on fac_y only
@@ -569,12 +726,17 @@ const fullHistogram = (
       if (x_axis === "Define Range") {
         xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
       } else if (x_axis === "Shared Axis") {
-        xScale
-          .domain([
-            0,
-            d3.max(data, (d) => d[var_x as keyof DataPoint] as number)!,
-          ])
-          .range([0, plotWidth]);
+        const minVal = d3.min(
+          data,
+          (d) => d[var_x as keyof DataPoint] as number
+        )!;
+        const maxVal = d3.max(
+          data,
+          (d) => d[var_x as keyof DataPoint] as number
+        )!;
+        const buffer = (maxVal - minVal) * 0.05;
+
+        xScale.domain([minVal - buffer, maxVal + buffer]).range([0, plotWidth]);
       } else if (x_axis === "Free Axis") {
         xScale
           .domain([
@@ -582,24 +744,6 @@ const fullHistogram = (
             d3.max(facetData, (d) => d[var_x as keyof DataPoint] as number)!,
           ])
           .range([0, plotWidth]);
-      }
-      console.log(x_axis);
-      console.log(xScale.domain());
-      const histogram = d3
-        .bin<DataPoint, number>()
-        .value((d) => d[var_x as keyof DataPoint] as number)!
-        .domain(xScale.domain() as [number, number])
-        .thresholds(n_bins);
-      const bins = histogram(facetData);
-      // Update y-scale domain based on bins
-      if (y_axis === "Define Range") {
-        yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
-      } else if (y_axis === "Shared Axis") {
-        throw new Error("Shared Axis is not supported for y-axis.");
-      } else if (y_axis === "Free Axis") {
-        yScale
-          .domain([0, d3.max(bins, (d) => d.length)!])
-          .range([plotHeight, 0]);
       }
 
       // Append a group for each facet
@@ -609,92 +753,47 @@ const fullHistogram = (
           `
       );
 
-      bins.forEach((bin) => {
-        const colorGroups = d3.group(bin, (d: DataPoint) => d.color);
-        const totalPoints = bin.length;
-        let accumulatedHeight = 0;
-
-        // Check if the color is categorical or continuous and sort accordingly
-        let sortedColorGroups: [string, DataPoint[]][] = [];
-        if (col === null) {
-          // If no color column is provided, use a single default color
-          const defaultColor = "steelblue"; // You can change this to any color you prefer
-          getColor = () => defaultColor;
-          legendData = [{ label: "Default Color", color: defaultColor }];
-        } else if (variables.discreteOptionsShort.includes(col[0])) {
-          // Sort by the order of categorical colors in the color scale domain
-          const uniqueColors = [...new Set(data.map((d) => d.color))];
-          sortedColorGroups = Array.from(colorGroups).sort(
-            ([colorA], [colorB]) =>
-              uniqueColors.indexOf(colorA) - uniqueColors.indexOf(colorB)
-          );
-        } else if (variables.continuousOptions.includes(col[0])) {
-          // Sort by the continuous values (increasing order)
-          sortedColorGroups = Array.from(colorGroups).sort(
-            ([colorA], [colorB]) => +colorA - +colorB // Assuming color is a numerical continuous value
-          );
-        }
-
-        // Iterate over the sorted color groups
-        sortedColorGroups.forEach(([color, groupData]) => {
-          const proportion = groupData.length / totalPoints;
-          const binHeight = proportion * (plotHeight - yScale(bin.length));
-
-          facetGroup
-            .append("rect")
-            .attr("x", 1)
-            .attr(
-              "transform",
-              `translate(${xScale(bin.x0!)}, ${
-                yScale(bin.length) + accumulatedHeight
-              })`
-            )
-            .attr("width", xScale(bin.x1!) - xScale(bin.x0!) - 1)
-            .attr("height", binHeight)
-            .attr("fill", getColor(groupData[0]));
-
-          accumulatedHeight += binHeight;
-        });
-      });
-
-      facetGroup
-        .append("g")
-        .attr("transform", `translate(0,${plotHeight})`)
-        .call(d3.axisBottom(xScale));
-      facetGroup
-        .append("text")
-        .attr("x", plotWidth / 2)
-        .attr("y", plotHeight + 30)
-        .attr("text-anchor", "middle")
-        .text(var_x);
-
-      // Add Y Axis to the facet
-      facetGroup.append("g").call(d3.axisLeft(yScale));
-      facetGroup
-        .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("x", -plotHeight / 2)
-        .attr("y", -30)
-        .attr("text-anchor", "middle")
-        .text("Counts");
-
-      facetGroup
-        .append("text")
-        .attr("x", plotWidth / 2)
-        .attr("y", -5)
-        .attr("text-anchor", "middle")
-        .text(`${facYValue}`);
+      const title = `${facYValue}`;
+      const x_label =
+        variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
+      const y_label = "Counts";
+      drawHistogram(
+        facetGroup,
+        facetData,
+        xScale,
+        yScale,
+        y_axis,
+        min_y_axis,
+        max_y_axis,
+        plotHeight,
+        plotWidth,
+        var_x,
+        col,
+        n_bins,
+        getColor,
+        discreteOrContinuous,
+        globalColorOrder, // Pass the global color order here
+        showMeanMedian,
+        title,
+        x_label,
+        y_label
+      );
     });
   } else {
     if (x_axis === "Define Range") {
       xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
     } else if (x_axis === "Shared Axis") {
-      xScale
-        .domain([
-          0,
-          d3.max(data, (d) => d[var_x as keyof DataPoint] as number)!,
-        ])
-        .range([0, plotWidth]);
+      const minVal = d3.min(
+        data,
+        (d) => d[var_x as keyof DataPoint] as number
+      )!;
+      const maxVal = d3.max(
+        data,
+        (d) => d[var_x as keyof DataPoint] as number
+      )!;
+      const buffer = (maxVal - minVal) * 0.05;
+
+      xScale.domain([minVal - buffer, maxVal + buffer]).range([0, plotWidth]);
     } else if (x_axis === "Free Axis") {
       xScale
         .domain([
@@ -703,22 +802,6 @@ const fullHistogram = (
         ])
         .range([0, plotWidth]);
     }
-    console.log(x_axis);
-    console.log(xScale.domain());
-    const histogram = d3
-      .bin<DataPoint, number>()
-      .value((d) => d[var_x as keyof DataPoint] as number)!
-      .domain(xScale.domain() as [number, number])
-      .thresholds(n_bins);
-    const bins = histogram(data);
-    // Update y-scale domain based on bins
-    if (y_axis === "Define Range") {
-      yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
-    } else if (y_axis === "Shared Axis") {
-      throw new Error("Shared Axis is not supported for y-axis.");
-    } else if (y_axis === "Free Axis") {
-      yScale.domain([0, d3.max(bins, (d) => d.length)!]).range([plotHeight, 0]);
-    }
 
     // Append a group for each facet
     const facetGroup = svg.append("g").attr(
@@ -726,74 +809,30 @@ const fullHistogram = (
       `translate(0, 0)
         `
     );
-
-    bins.forEach((bin) => {
-      const colorGroups = d3.group(bin, (d: DataPoint) => d.color);
-      const totalPoints = bin.length;
-      let accumulatedHeight = 0;
-
-      // Check if the color is categorical or continuous and sort accordingly
-      let sortedColorGroups: [string, DataPoint[]][] = [];
-      if (col === null) {
-        // If no color column is provided, use a single default color
-        const defaultColor = "steelblue"; // You can change this to any color you prefer
-        getColor = () => defaultColor;
-        legendData = [{ label: "Default Color", color: defaultColor }];
-      } else if (variables.discreteOptionsShort.includes(col[0])) {
-        // Sort by the order of categorical colors in the color scale domain
-        const uniqueColors = [...new Set(data.map((d) => d.color))];
-        sortedColorGroups = Array.from(colorGroups).sort(
-          ([colorA], [colorB]) =>
-            uniqueColors.indexOf(colorA) - uniqueColors.indexOf(colorB)
-        );
-      } else if (variables.continuousOptions.includes(col[0])) {
-        // Sort by the continuous values (increasing order)
-        sortedColorGroups = Array.from(colorGroups).sort(
-          ([colorA], [colorB]) => +colorA - +colorB // Assuming color is a numerical continuous value
-        );
-      }
-
-      // Iterate over the sorted color groups
-      sortedColorGroups.forEach(([color, groupData]) => {
-        const proportion = groupData.length / totalPoints;
-        const binHeight = proportion * (plotHeight - yScale(bin.length));
-
-        facetGroup
-          .append("rect")
-          .attr("x", 1)
-          .attr(
-            "transform",
-            `translate(${xScale(bin.x0!)}, ${
-              yScale(bin.length) + accumulatedHeight
-            })`
-          )
-          .attr("width", xScale(bin.x1!) - xScale(bin.x0!) - 1)
-          .attr("height", binHeight)
-          .attr("fill", getColor(groupData[0]));
-
-        accumulatedHeight += binHeight;
-      });
-    });
-
-    facetGroup
-      .append("g")
-      .attr("transform", `translate(0,${plotHeight})`)
-      .call(d3.axisBottom(xScale));
-    facetGroup
-      .append("text")
-      .attr("x", plotWidth / 2)
-      .attr("y", plotHeight + 30) // Adjust this to move the label below the axis
-      .attr("text-anchor", "middle")
-      .text(var_x);
-
-    facetGroup.append("g").call(d3.axisLeft(yScale));
-
-    facetGroup
-      .append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("x", -plotHeight / 2)
-      .attr("y", -30)
-      .attr("text-anchor", "middle")
-      .text("Counts");
+    const title = ``;
+    const x_label =
+      variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
+    const y_label = "Counts";
+    drawHistogram(
+      facetGroup,
+      data,
+      xScale,
+      yScale,
+      y_axis,
+      min_y_axis,
+      max_y_axis,
+      plotHeight,
+      plotWidth,
+      var_x,
+      col,
+      n_bins,
+      getColor,
+      discreteOrContinuous,
+      globalColorOrder, // Pass the global color order here
+      showMeanMedian,
+      title,
+      x_label,
+      y_label
+    );
   }
 };
