@@ -104,7 +104,7 @@ interface DataPoint {
   ancOCE: number;
   fac_x: string | null; // Assuming fac_x and fac_y might be null
   fac_y: string | null;
-  col: string;
+  color: string;
 }
 export const SummStatInd: React.FC = () => {
   const [viewTabValue, setViewTabValue] = useState(0);
@@ -335,7 +335,7 @@ export const SummStatInd: React.FC = () => {
             ref={plotRef}
             style={{
               width: "100%",
-              height: "90%",
+              height: "100%",
               flexGrow: 1,
               position: "relative",
             }} // Ensure the container is relatively positioned
@@ -369,11 +369,13 @@ export const SummStatInd: React.FC = () => {
             ) : filters.plot === "Map" ? (
               <MapComponent
                 data={data}
+                col={filters.var_1_mapped}
+                col_unmapped={filters.var_1}
                 map_data={filters.map_data}
                 map_data_rad={filters.map_data_rad}
-                map_reg={filters.map_data}
+                map_reg={filters.map_reg}
                 map_reg_rad={filters.map_reg_rad}
-                map_pop={filters.map_data}
+                map_pop={filters.map_pop}
                 map_pop_rad={filters.map_pop_rad}
                 map_ind_rad={filters.map_ind_rad}
                 map_lat_jit={filters.map_lat_jit}
@@ -391,6 +393,7 @@ export const SummStatInd: React.FC = () => {
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
+                width: "20%",
               }}
             >
               <PlotDownloadButton plotRef={plotRef} fileName="plot" />

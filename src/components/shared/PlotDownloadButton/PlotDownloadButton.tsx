@@ -63,14 +63,14 @@ const PlotDownloadButton: React.FC<PlotDownloadButtonProps> = ({
   };
 
   return (
-    <div>
+    <div style={{ width: "100%", height: "100%" }}>
       <Button
         aria-controls="simple-menu"
         aria-haspopup="true"
         onClick={handleClick}
         variant="contained"
         color="primary"
-        style={{ width: "120px", fontSize: "12px" }}
+        style={{ width: "100%", height: "100%", fontSize: "12px" }}
       >
         Download Plot
       </Button>

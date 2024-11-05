@@ -333,18 +333,35 @@ const SideFilter: React.FC<SideFilterProps> = ({
           max_y_axis: 0,
           tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
         };
-      /* case "Map":
+      case "Map":
         return {
           map_data: true,
-          map_data_rad: 15,
+          data_1: ["DATA", "PDAT"],
+          data_1_mapped: ["DATA", "PDAT"],
+          reg_1: [
+            "East Asia",
+            "Europe",
+            "South Asia",
+            "Oceania",
+            "Central Asia",
+          ],
+          reg_1_mapped: ["EAS", "EUR", "SAS", "OCE", "CAS"],
+          mpp_1: 0.5,
+          chrms_1: ["Autosome"],
+          chrms_1_mapped: ["A"],
+          ancs_1: ["All"],
+          ancs_1_mapped: ["All"],
+          var_1: "Mean Length (bp)",
+          var_1_mapped: "len_mea",
+          map_data_rad: 40,
           map_reg: true,
-          map_reg_rad: 10,
-          map_pop: true,
+          map_reg_rad: 25,
+          map_pop: false,
           map_pop_rad: 15,
           map_ind_rad: 3,
           map_lat_jit: 1,
           map_lon_jit: 1,
-        }; */
+        };
 
       default:
         return {};
