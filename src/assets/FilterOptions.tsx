@@ -108,7 +108,7 @@ export const ancestries = {
     "Vindija",
     "Chagyrskaya",
     "AmbigNean",
-    "nonDAVC",
+    "Non DAVC",
   ],
   mapping: {
     All: "All",
@@ -119,7 +119,7 @@ export const ancestries = {
     Vindija: "Vindija",
     Chagyrskaya: "Chagyrskaya",
     AmbigNean: "AmbigNean",
-    nonDAVC: "nonDAVC",
+    "Non DAVC": "nonDAVC",
   },
 };
 
@@ -132,7 +132,7 @@ export const ancestries_noAll = {
     "Vindija",
     "Chagyrskaya",
     "AmbigNean",
-    "nonDAVC",
+    "Non DAVC",
   ],
   mapping: {
     Ambiguous: "Ambiguous",
@@ -142,7 +142,7 @@ export const ancestries_noAll = {
     Vindija: "Vindija",
     Chagyrskaya: "Chagyrskaya",
     AmbigNean: "AmbigNean",
-    nonDAVC: "nonDAVC",
+    "Non DAVC": "nonDAVC",
   },
 };
 
@@ -366,6 +366,27 @@ export const regions = {
   },
 };
 
+export const regions_frag_vis_reg = {
+  options: [
+    "Europe",
+    "MID",
+    "South Asia",
+    "Central Asia",
+    "East Asia",
+    "America",
+    "Oceania",
+    "Global",
+  ],
+};
+
+export const ancestries_frag_vis_reg = {
+  options: ["All", "Ambiguous", "Denisova", "Neanderthal", "Non DAVC"],
+};
+
+export const statistic_frag_vis_reg = {
+  options: ["Joined", "Frequency", "Shared", "Private"],
+};
+
 export const variables = {
   options_all: [
     "Individual",
@@ -448,7 +469,7 @@ export const variables = {
     Vindija: "Vindija",
     Chagyrskaya: "Chagyrskaya",
     AmbigNean: "AmbigNean",
-    nonDAVC: "nonDAVC",
+    "Non DAVC": "nonDAVC",
     Individual: "ind",
     Sex: "sex",
     Population: "pop",
@@ -493,6 +514,33 @@ export const variables = {
     America: "AMR",
     Oceania: "OCE",
     "Central Asia": "CAS",
+    Global: "GLOB",
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+    "5": "5",
+    "6": "6",
+    "7": "7",
+    "8": "8",
+    "9": "9",
+    "10": "10",
+    "11": "11",
+    "12": "12",
+    "13": "13",
+    "14": "14",
+    "15": "15",
+    "16": "16",
+    "17": "17",
+    "18": "18",
+    "19": "19",
+    "20": "20",
+    "21": "21",
+    "22": "22",
+    Joined: "joined",
+    Frequency: "freq",
+    Shared: "shared",
+    Private: "private",
   },
   mappingToLong: {
     A: "Autosome",
@@ -506,7 +554,7 @@ export const variables = {
     Vindija: "Vindija",
     Chagyrskaya: "Chagyrskaya",
     AmbigNean: "AmbigNean",
-    nonDAVC: "nonDAVC",
+    nonDAVC: "Non DAVC",
     ind: "Individual",
     sex: "Sex",
     pop: "Population",
@@ -551,5 +599,32 @@ export const variables = {
     AMR: "America",
     OCE: "Oceania",
     CAS: "Central Asia",
+    GLOB: "Global",
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+    "5": "5",
+    "6": "6",
+    "7": "7",
+    "8": "8",
+    "9": "9",
+    "10": "10",
+    "11": "11",
+    "12": "12",
+    "13": "13",
+    "14": "14",
+    "15": "15",
+    "16": "16",
+    "17": "17",
+    "18": "18",
+    "19": "19",
+    "20": "20",
+    "21": "21",
+    "22": "22",
+    joined: "Joined",
+    freq: "Frequency",
+    shared: "Shared",
+    private: "Private",
   },
 };

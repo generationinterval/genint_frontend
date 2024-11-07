@@ -51,6 +51,9 @@ export const NavBar: React.FC<NonNullable<unknown>> = () => {
                   <Button variant="contained" href={paths.fragment.vis_per_ind}>
                     Frag Vis Per Ind
                   </Button>
+                  <Button variant="contained" href={paths.fragment.vis_per_reg}>
+                    Frag Vis Per reg
+                  </Button>
                   {/*                  <Button
                     variant="contained"
                     href={paths.summary_stats.per_ind}

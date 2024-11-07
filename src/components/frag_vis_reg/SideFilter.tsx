@@ -7,7 +7,10 @@ import {
   variables,
   color_chrms,
   min_chr_len_marks,
+  ancestries_frag_vis_reg,
   chr_range_marks,
+  regions_frag_vis_reg,
+  statistic_frag_vis_reg,
 } from "@/assets/FilterOptions";
 import {
   Box,
@@ -21,16 +24,19 @@ import {
   MenuItem,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
-import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
 
 interface FilterState {
-  tree_lin: string[];
+  stat: string;
+  stat_mapped: string;
+  regs: string[];
+  regs_mapped: string[];
   chrms: string[];
-  ancs: string[];
+  chrms_mapped: string[];
+  anc: string;
+  anc_mapped: string;
   mpp: number;
   chrms_limits: [number, number];
   min_length: number;
-  color: string;
 }
 
 interface SideFilterProps {
@@ -46,65 +52,57 @@ const SideFilter: React.FC<SideFilterProps> = ({
   setFilters,
   applyFilters,
 }) => {
-  const handleSingleChangeMapped = (key: keyof FilterState, value: string) => {
-    // Use the mapping based on the key
-    const mappedValue = variables.mappingToShort[value as MappingKey];
+  const handleSingleMap =
+    (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
+      const value = event.target.value;
+      const mappedValue = variables.mappingToShort[value as MappingKey];
 
-    // Set the original and mapped values in the state
-    setFilters((prevFilters: FilterState) => ({
-      ...prevFilters,
-      [key]: value, // Store the original value for display
-      [`${key}_mapped`]: mappedValue, // Store the mapped value for backend
-    }));
-  };
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: value, // Original value for display
+        [`${key}_mapped`]: mappedValue, // Mapped value for backend
+      }));
+    };
 
-  const handleSingleChangeUnmapped = (key: keyof FilterState) => {
-    return (
-      event:
-        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-        | SelectChangeEvent<string>,
-      child?: React.ReactNode
-    ) => {
-      // Check if the event is a SelectChangeEvent
-      const value = "target" in event ? event.target.value : event;
+  const handleSingleNoMap =
+    (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
+      const value = event.target.value;
 
       setFilters((prevFilters: FilterState) => ({
         ...prevFilters,
-        [key]: value, // update the specific key in the state
+        [key]: value,
       }));
     };
-  };
-  const handleMultipleChangeUnmapped = (
-    key: keyof FilterState,
-    newValues: string[]
-  ) => {
-    setFilters((prevFilters: FilterState) => ({
-      ...prevFilters,
-      [key]: newValues, // update the specific key with the new selected values
-    }));
-  };
-  const handleMultipleChangeMapped = (
-    key: keyof FilterState,
-    newValues: string[],
-    mapping: { [key: string]: string }
-  ) => {
-    // Map the selected values to their corresponding mapped values
-    const mappedValues = newValues.map((value) => mapping[value]);
 
-    // Set the original and mapped values in the state
-    setFilters((prevFilters: FilterState) => ({
-      ...prevFilters,
-      [key]: newValues, // Store the original selected values
-      [`${key}_mapped`]: mappedValues, // Store the mapped values for backend or processing
-    }));
-  };
+  const handleMultiMap =
+    (key: keyof FilterState) => (selectedValues: string[]) => {
+      const mappedValues = selectedValues.map(
+        (v) => variables.mappingToShort[v as MappingKey]
+      );
 
-  const handleNumberChange = (key: keyof FilterState, value: number) => {
-    setFilters((prevFilters: FilterState) => ({
-      ...prevFilters,
-      [key]: value,
-    }));
-  };
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: selectedValues, // Original values for display
+        [`${key}_mapped`]: mappedValues, // Mapped values for backend
+      }));
+    };
+
+  const handleMultiNoMap =
+    (key: keyof FilterState) => (selectedValues: string[]) => {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: selectedValues,
+      }));
+    };
+
+  const handleCheckbox =
+    (key: keyof FilterState) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: event.target.checked,
+      }));
+    };
   const handleNumberRangeChange = (
     key: keyof FilterState,
     newValue: number[]
@@ -114,48 +112,68 @@ const SideFilter: React.FC<SideFilterProps> = ({
       [key]: newValue, // Update the key (e.g., chrms_limits) with the new range
     }));
   };
-  const handleTreeSelectionChange = (selectedItems: string[]) => {
-    // Update tree_lin with selected tree items
-    setFilters((prevFilters: FilterState) => ({
-      ...prevFilters,
-      tree_lin: selectedItems,
-    }));
-  };
+
+  const handleSlider =
+    (key: keyof FilterState) => (event: Event, newValue: number | number[]) => {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: newValue as number,
+      }));
+    };
 
   return (
     <Grid container spacing={2}>
       <Grid item xs={12}>
-        <Typography variant="h5">1- Select Individuals:</Typography>
+        <Typography variant="h5">1- Select Statistic:</Typography>
       </Grid>
       <Grid item xs={12}>
-        <GmailTreeViewWithText
-          selectedItems={filters.tree_lin}
-          onSelectedItemsChange={handleTreeSelectionChange} // Handle multiselect in tree
+        <FormControl fullWidth sx={{ mb: 1 }}>
+          <InputLabel id="stat_select-label">Statistic</InputLabel>
+          <Select
+            labelId="stat_select-label"
+            id="stat_select"
+            value={filters.stat} // Bind to the original value for display
+            label="Statistic"
+            onChange={handleSingleMap("stat")}
+          >
+            {statistic_frag_vis_reg.options.map((option, index) => (
+              <MenuItem key={index} value={option}>
+                {option}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <MultipleSelectChip
+          sx={{ mb: 1, mt: 1 }}
+          options={regions_frag_vis_reg.options}
+          label="Regions"
+          selectedValues={filters.regs}
+          onChange={handleMultiMap("regs")}
         />
-      </Grid>
-      <Grid item xs={12}>
         <MultipleSelectChip
           sx={{ mb: 1, mt: 1 }}
           options={chrms_all.options}
           label="Chromosomes"
           selectedValues={filters.chrms}
-          onChange={(newValues) =>
-            handleMultipleChangeMapped("chrms", newValues, chrms_all.mapping)
-          }
+          onChange={handleMultiMap("chrms")}
         />
-        <MultipleSelectChip
-          sx={{ mb: 1, mt: 1 }}
-          options={ancestries_noAll.options}
-          label="Anestries"
-          selectedValues={filters.ancs}
-          onChange={(newValues) =>
-            handleMultipleChangeMapped(
-              "ancs",
-              newValues,
-              ancestries_noAll.mapping
-            )
-          }
-        />
+        <FormControl fullWidth sx={{ mb: 1 }}>
+          <InputLabel id="ancestry_select-label">Ancestry</InputLabel>
+          <Select
+            labelId="ancestry_select-label"
+            id="ancestry_select"
+            value={filters.anc} // Bind to the original value for display
+            label="Ancestry"
+            onChange={handleSingleMap("anc")}
+          >
+            {ancestries_frag_vis_reg.options.map((option, index) => (
+              <MenuItem key={index} value={option}>
+                {option}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <Box
           sx={{
             width: "100%",
@@ -174,9 +192,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           </Typography>
           <Slider
             value={filters.mpp}
-            onChange={(event, newValue) =>
-              handleNumberChange("mpp", newValue as number)
-            }
+            onChange={handleSlider("mpp")}
             aria-labelledby="discrete-slider"
             valueLabelDisplay="auto"
             step={0.05}
@@ -186,7 +202,6 @@ const SideFilter: React.FC<SideFilterProps> = ({
             sx={{ width: "85%" }}
           />
         </Box>
-
         <Box
           sx={{
             width: "100%",
@@ -238,9 +253,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           </Typography>
           <Slider
             value={filters.min_length}
-            onChange={(event, newValue) =>
-              handleNumberChange("min_length", newValue as number)
-            }
+            onChange={handleSlider("min_length")}
             aria-labelledby="discrete-slider"
             valueLabelDisplay="auto"
             step={10}
@@ -250,22 +263,6 @@ const SideFilter: React.FC<SideFilterProps> = ({
             sx={{ width: "85%" }}
           />
         </Box>
-        <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
-          <InputLabel id="color">Color by</InputLabel>
-          <Select
-            labelId="color"
-            id="color"
-            value={filters.color} // Bind to the plot state
-            label="Color by"
-            onChange={handleSingleChangeUnmapped("color")} // Updated handler
-          >
-            {color_chrms.options.map((option, index) => (
-              <MenuItem key={index} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
       </Grid>
 
       <Grid item xs={12}>

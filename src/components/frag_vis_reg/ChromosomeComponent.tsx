@@ -2,57 +2,38 @@ import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
 import { chrlen } from "@/assets/StaticData";
+import { stat } from "fs";
 
 export interface DataPoint {
-  alt: number; // 1
-  anc: string; // "AmbigNean"
-  arc: number; // 1
-  car: number; // 0
-  cha: number; // 1
-  chrom: string; // "4"
-  cne: number; // 1
-  dat: string; // "1KGP"
-  den: number; // 0
-  end: number; // 43288000
-  hap: number; // 1
-  length: number; // 30000
-  lin: string; // "HG02351_1KGP"
-  mean_prob: number; // 0.85356
-  name: string; // "HG02351"
-  oda: string; // "1KGP"
-  pal: number; // 0
-  pch: number; // 0
-  pde: number; // 0
-  pop: string; // "CDX"
-  pvi: number; // 0
-  reg: string; // "EAS"
-  snps: number; // 10
-  start: number; // 43258000
-  vin: number; // 1
+  chrom: string;
+  start: number;
+  end: number;
+  reg: string;
+  numind?: number;
+  freq?: number;
+  column_6?: number;
 }
 
 type ChromosomeProps = {
   data: any[];
+  stat: string;
   isSidebarVisible: boolean;
-  lin: string[];
   chrms: string[];
-  ancs: string[];
-  mpp: number;
+  regs: string[];
+  anc: string;
   chrms_limits: [number, number];
   min_length: number;
-  color: string;
 };
 
 const ChromosomeComponent: React.FC<ChromosomeProps> = ({
   data,
+  stat,
   isSidebarVisible,
-  lin,
   chrms,
-  ancs,
-  mpp,
+  regs,
+  anc,
   chrms_limits,
   min_length,
-  color,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -61,16 +42,15 @@ const ChromosomeComponent: React.FC<ChromosomeProps> = ({
       plotChromosomes(
         svgRef.current!,
         data,
-        lin,
+        stat,
         chrms,
-        ancs,
-        mpp,
+        regs,
+        anc,
         chrms_limits,
-        min_length,
-        color
+        min_length
       );
     }
-  }, [data, chrms, chrms_limits, mpp, min_length, color]);
+  }, [data, isSidebarVisible, chrms, anc, chrms_limits, min_length]);
 
   const handleResize = () => {
     if (containerRef.current && svgRef.current && data) {
@@ -80,13 +60,12 @@ const ChromosomeComponent: React.FC<ChromosomeProps> = ({
       plotChromosomes(
         svgRef.current!,
         data,
-        lin,
+        stat,
         chrms,
-        ancs,
-        mpp,
+        regs,
+        anc,
         chrms_limits,
-        min_length,
-        color
+        min_length
       );
     }
   };
@@ -96,12 +75,12 @@ const ChromosomeComponent: React.FC<ChromosomeProps> = ({
     window.addEventListener("resize", handleResize);
     // Run resize handler once to set initial sizes
     handleResize();
-    console.log(data, chrms, chrms_limits, mpp, min_length, color);
+
     // Cleanup event listener on component unmount
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [data, chrms, chrms_limits, mpp, min_length, color]);
+  }, [data, isSidebarVisible, chrms, anc, chrms_limits, min_length]);
 
   useEffect(() => {
     // Handle resize when the sidebar visibility changes
@@ -123,13 +102,12 @@ export default ChromosomeComponent;
 const plotChromosomes = (
   svgElement: SVGSVGElement,
   data: DataPoint[],
-  lin: string[],
+  stat: string,
   chrms: string[],
-  ancs: string[],
-  mpp: number,
+  regs: string[],
+  anc: string,
   chrms_limits: [number, number],
-  min_length: number,
-  color: string
+  min_length: number
 ) => {
   d3.select(svgElement).selectAll("*").remove();
   const container = svgElement.parentElement;
@@ -148,36 +126,28 @@ const plotChromosomes = (
   const plotWidth = width - plotMargin.left - plotMargin.right;
   const tooltip = d3.select(container).append("div").attr("class", "tooltip");
 
-  function handleMouseOver(event: any, d: DataPoint) {
+  function handleMouseOver(event: any, d: DataPoint, stat: string) {
     tooltip.transition().duration(200).style("opacity", 0.9);
 
     const [mouseX, mouseY] = d3.pointer(event, container);
 
-    const htmlContent = `
-      <strong>Individual:</strong> ${d.name}<br/>
-      <strong>Dataset:</strong> ${d.dat}<br/>
-      <strong>Region:</strong> ${d.reg}<br/>
-      <strong>Population:</strong> ${d.pop}<br/>
-      <strong>Chromosome:</strong> ${d.chrom}<br/>
-      <strong>Haplotype:</strong> ${d.hap}<br/>
-      <strong>Start:</strong> ${d.start}<br/>
-      <strong>End:</strong> ${d.end}<br/>
-      <strong>Length:</strong> ${d.length}<br/>
-      <strong>Mean Post. Prob.:</strong> ${d.mean_prob}<br/>
-      <strong>Ancestry:</strong> ${d.anc}<br/>
-      <strong>SNPs:</strong> ${d.snps}<br/>
-      <strong>arc:</strong> ${d.arc}<br/>
-      <strong>vin:</strong> ${d.vin}<br/>
-      <strong>cha:</strong> ${d.cha}<br/>
-      <strong>alt:</strong> ${d.alt}<br/>
-      <strong>den:</strong> ${d.den}<br/>
-      <strong>car:</strong> ${d.car}<br/>
-      <strong>cne:</strong> ${d.cne}<br/>
-      <strong>pvi:</strong> ${d.pvi}<br/>
-      <strong>pch:</strong> ${d.pch}<br/>
-      <strong>pal:</strong> ${d.pal}<br/>
-      <strong>pde:</strong> ${d.pde}<br/>
-    `;
+    // Check if "stat" is "freq" and set the tooltip content accordingly
+    const htmlContent =
+      stat === "freq"
+        ? `
+          <strong>Region:</strong> ${d.reg}<br/>
+          <strong>Start:</strong> ${d.start}<br/>
+          <strong>End:</strong> ${d.end}<br/>
+          <strong>Length:</strong> ${d.end - d.start}<br/>
+          <strong>Number of Individuals:</strong> ${d.numind}<br/>
+          <strong>Frequency:</strong> ${d.freq}<br/>
+        `
+        : `
+          <strong>Region:</strong> ${d.reg}<br/>
+          <strong>Start:</strong> ${d.start}<br/>
+          <strong>End:</strong> ${d.end}<br/>
+          <strong>Length:</strong> ${d.end - d.start}<br/>
+        `;
 
     tooltip
       .html(htmlContent)
@@ -233,30 +203,13 @@ const plotChromosomes = (
   const chrmsCount = chrms.length;
   const chrPadding = 10; // Padding between chromosomes
   const chrHeight = (plotHeight - (chrmsCount - 1) * chrPadding) / chrmsCount; // Space per chromosome minus padding
-  const partitionHeight = chrHeight / lin.length;
+  const partitionHeight = chrHeight / regs.length;
 
   let colorScaleDiscrete: d3.ScaleOrdinal<string, string> | null = null;
-  let colorScaleContinous: ((value: number) => string) | null = null;
 
-  if (color === "Ancestry") {
-    colorScaleDiscrete = d3
-      .scaleOrdinal<string>(d3.schemeCategory10)
-      .domain(ancs);
-  } else if (color === "Individual") {
-    colorScaleDiscrete = d3
-      .scaleOrdinal<string>(d3.schemeCategory10)
-      .domain(lin);
-  } else if (color === "Mean Posterior Probability") {
-    // Scale maps from 0.5 to 1, and the result of the scale will be a number between 0 and 1.
-    const mppScale = d3
-      .scaleLinear<number>()
-      .domain([0.5, 1]) // Input domain
-      .range([0, 1]); // Range for the interpolator
-
-    // The color scale uses `interpolateBlues` to map the number to a color
-    colorScaleContinous = (value: number) =>
-      d3.interpolateBlues(mppScale(value));
-  }
+  colorScaleDiscrete = d3
+    .scaleOrdinal<string>(d3.schemeCategory10)
+    .domain(regs);
 
   // Draw chromosomes
   orderedChrms.forEach((chrom, index) => {
@@ -281,42 +234,31 @@ const plotChromosomes = (
       .attr("dy", "0.35em") // Small adjustment for text baseline
       .style("text-anchor", "end") // Align text to the right
       .text(`${chrom}`);
-    // Filter data for this chromosome
+
     const chromData = data.filter((d) => {
       if (chrom === "X Prime") {
         return d.chrom === "Xprime";
       }
       return d.chrom === chrom;
     });
-
     // For each individual, draw their respective rectangle
-    lin.forEach((linValue, linIndex) => {
+    regs.forEach((regValue, regIndex) => {
       // Filter data for the individual
-      const individualData = chromData.filter(
+      const individualRegData = chromData.filter(
         (d) =>
-          d.lin === linValue &&
-          d.mean_prob >= mpp && // Filter based on mean_prob
-          d.length >= min_length * 1000 && // Filter based on length
+          d.reg === regValue && // Filter based on mean_prob
+          d.end - d.start >= min_length * 1000 && // Filter based on length
           d.start >= chrms_limits[0] * 1000
       );
 
-      individualData.forEach((d) => {
+      individualRegData.forEach((d) => {
         const startX = xScale(d.start);
         const endX = xScale(d.end);
-        const indYPos = yPos + linIndex * partitionHeight;
+        const indYPos = yPos + regIndex * partitionHeight;
 
         let fillColor: string = "black"; // Default fallback color
 
-        if (color === "Individual" && colorScaleDiscrete) {
-          fillColor = colorScaleDiscrete(d.lin);
-        } else if (
-          color === "Mean Posterior Probability" &&
-          colorScaleContinous
-        ) {
-          fillColor = colorScaleContinous(d.mean_prob);
-        } else if (color === "Ancestry" && colorScaleDiscrete) {
-          fillColor = colorScaleDiscrete(d.anc);
-        }
+        fillColor = colorScaleDiscrete(d.reg);
 
         svg
           .append("rect")
@@ -325,7 +267,7 @@ const plotChromosomes = (
           .attr("width", endX - startX)
           .attr("height", partitionHeight)
           .attr("fill", fillColor)
-          .on("mouseover", (event) => handleMouseOver(event, d))
+          .on("mouseover", (event) => handleMouseOver(event, d, stat))
           .on("mousemove", (event) => handleMouseMove(event, d))
           .on("mouseout", (event) => handleMouseOut(event, d));
       });
@@ -343,76 +285,32 @@ const plotChromosomes = (
 
   const legend = svg.append("g").attr("transform", `translate(0,${legendY})`); // Initial Y translation for legend
 
-  if (color === "Ancestry" || color === "Individual") {
-    const keys = color === "Ancestry" ? ancs : lin;
-    const legendItemWidth =
-      color === "Ancestry" ? 125 : color === "Individual" ? 200 : 150;
-    // Width per item, including spacing
-    const totalLegendWidth = keys.length * legendItemWidth; // Total width of all legend items
-    const legendX = (plotWidth - totalLegendWidth) / 2; // Calculate X position to center the legend
+  const keys = regs;
+  const legendItemWidth = 125;
+  // Width per item, including spacing
+  const totalLegendWidth = keys.length * legendItemWidth; // Total width of all legend items
+  const legendX = (plotWidth - totalLegendWidth) / 2; // Calculate X position to center the legend
 
-    legend.attr("transform", `translate(${legendX},${legendY})`); // Adjust legend X and Y position
+  legend.attr("transform", `translate(${legendX},${legendY})`); // Adjust legend X and Y position
 
-    keys.forEach((key, i) => {
-      legend
-        .append("rect")
-        .attr("x", i * legendItemWidth) // Position horizontally
-        .attr("y", 0) // Keep y the same to align all items in one row
-        .attr("width", 18)
-        .attr("height", 18)
-        .style(
-          "fill",
-          colorScaleDiscrete ? (colorScaleDiscrete(key) as string) : "black"
-        );
-
-      legend
-        .append("text")
-        .attr("x", i * legendItemWidth + 24) // Position text next to the rectangle
-        .attr("y", 9) // Align text vertically with the rectangles
-        .attr("dy", "0.35em")
-        .style("text-anchor", "start")
-        .text(key);
-    });
-  } else if (color === "Mean Posterior Probability") {
-    // Continuous legend for mean_prob
-    const gradient = svg
-      .append("defs")
-      .append("linearGradient")
-      .attr("id", "gradient")
-      .attr("x1", "0%")
-      .attr("y1", "0%")
-      .attr("x2", "100%")
-      .attr("y2", "0%");
-
-    gradient
-      .append("stop")
-      .attr("offset", "0%")
-      .attr("stop-color", "lightblue");
-    gradient
-      .append("stop")
-      .attr("offset", "100%")
-      .attr("stop-color", "darkblue");
-
+  keys.forEach((key, i) => {
     legend
       .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", 100)
+      .attr("x", i * legendItemWidth) // Position horizontally
+      .attr("y", 0) // Keep y the same to align all items in one row
+      .attr("width", 18)
       .attr("height", 18)
-      .style("fill", "url(#gradient)");
+      .style(
+        "fill",
+        colorScaleDiscrete ? (colorScaleDiscrete(key) as string) : "black"
+      );
 
     legend
       .append("text")
-      .attr("x", 0)
-      .attr("y", 30)
+      .attr("x", i * legendItemWidth + 24) // Position text next to the rectangle
+      .attr("y", 9) // Align text vertically with the rectangles
+      .attr("dy", "0.35em")
       .style("text-anchor", "start")
-      .text("0.5");
-
-    legend
-      .append("text")
-      .attr("x", 100)
-      .attr("y", 30)
-      .style("text-anchor", "end")
-      .text("1");
-  }
+      .text(key);
+  });
 };

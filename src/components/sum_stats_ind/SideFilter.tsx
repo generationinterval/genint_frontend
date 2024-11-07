@@ -114,14 +114,6 @@ const SideFilter: React.FC<SideFilterProps> = ({
   setFilters,
   applyFilters,
 }) => {
-  const mapValues = (values: string | string[]) => {
-    if (Array.isArray(values)) {
-      return values.map((v) => variables.mappingToShort[v as MappingKey]);
-    } else {
-      return variables.mappingToShort[values as MappingKey];
-    }
-  };
-
   const handleSingleMap =
     (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
       const value = event.target.value;
