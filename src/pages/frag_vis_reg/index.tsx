@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Grid } from "@mui/material";
 import SideFilter from "@/components/frag_vis_reg/SideFilter";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
+import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
 import "@/global.css";
 import {
   ancestries_noAll,
@@ -90,7 +91,7 @@ export const FragVisReg: React.FC = () => {
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
   const [loading, setLoading] = useState(false); // To handle loading state
-
+  const plotRef = useRef<HTMLDivElement | null>(null);
   const applyFilters = async () => {
     setLoading(true);
     console.log(
@@ -175,7 +176,18 @@ export const FragVisReg: React.FC = () => {
       >
         {loading && <div>Loading...</div>} {/* Show a loading indicator */}
         {!loading && isFiltersApplied && data.length > 0 && (
-          <>
+          <Grid
+            item
+            xs={12}
+            className="plot-container"
+            ref={plotRef}
+            style={{
+              width: "100%",
+              height: "100%",
+              flexGrow: 1,
+              position: "relative",
+            }} // Ensure the container is relatively positioned
+          >
             <ChromosomeComponent
               data={data}
               stat={filters.stat_mapped}
@@ -186,7 +198,20 @@ export const FragVisReg: React.FC = () => {
               chrms_limits={filters.chrms_limits}
               min_length={filters.min_length}
             />
-          </>
+            <div
+              style={{
+                position: "absolute",
+                bottom: "10px",
+                left: "10px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                width: "10%",
+              }}
+            >
+              <PlotDownloadButton plotRef={plotRef} fileName="plot" />
+            </div>
+          </Grid>
         )}
         {!loading && !isFiltersApplied && <div>No data to display yet.</div>}
       </Grid>

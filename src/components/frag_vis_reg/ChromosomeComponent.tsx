@@ -25,6 +25,8 @@ type ChromosomeProps = {
   min_length: number;
 };
 
+type MappingKey = keyof typeof variables.mappingToLong;
+
 const ChromosomeComponent: React.FC<ChromosomeProps> = ({
   data,
   stat,
@@ -311,6 +313,6 @@ const plotChromosomes = (
       .attr("y", 9) // Align text vertically with the rectangles
       .attr("dy", "0.35em")
       .style("text-anchor", "start")
-      .text(key);
+      .text(variables.mappingToLong[key as MappingKey]);
   });
 };
