@@ -151,8 +151,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     if (!mapRef.current) return;
     const bounds = L.latLngBounds(
-      L.latLng(-85, -180), // Southwest corner
-      L.latLng(85, 180) // Northeast corner
+      L.latLng(-85, -250), // Southwest corner
+      L.latLng(85, 250) // Northeast corner
     );
 
     // Initialize the map

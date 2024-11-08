@@ -32,7 +32,9 @@ export const NavBar: React.FC<NonNullable<unknown>> = () => {
                 </Button>
               </Grid>
               <Grid item>
-                <Typography>Generation Interval</Typography>
+                <Typography color="primary" sx={{ color: 'primary.contrastText' }}>
+                  Generation Interval
+                </Typography>
               </Grid>
               <Grid item>
                 <Stack direction="row" spacing={2}>

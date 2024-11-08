@@ -127,9 +127,7 @@ const MultipleSelectChip: React.FC<MultipleSelectChipProps> = ({
                     variant === "contained"
                       ? theme.palette.primary.light
                       : theme.palette.action.selected,
-                  color: theme.palette.getContrastText(
-                    theme.palette.primary.light
-                  ),
+                  color: theme.palette.text.primary,
                 }}
               />
             ))}
