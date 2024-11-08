@@ -92,9 +92,9 @@ const createColorScale = (
 
     legendData = isExtentValid
       ? [
-          { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
-          { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
-        ]
+        { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
+        { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
+      ]
       : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
     discreteOrContinuous = "continuous";
     globalColorOrder = []; // Continuous variables don't have a strict "order" per se
@@ -168,7 +168,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     // Add a tile layer (OpenStreetMap)
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
       {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
