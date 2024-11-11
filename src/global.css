@@ -7,7 +7,7 @@
   
   body {
     font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    background-color: #ffffff;
     color: #333;
     line-height: 1.6;
   }
@@ -29,7 +29,7 @@
   
   /* Custom scrollbar styles */
 .custom-scrollbar {
-  scrollbar-width: none; /* For Firefox */
+  scrollbar-width: 1px; /* For Firefox */
   scrollbar-color: #ffffff #f1f1f1; /* Color for Firefox */
 }
 

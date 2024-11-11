@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Button, Menu, MenuItem } from "@mui/material";
+import { Button, Menu, MenuItem, useTheme } from "@mui/material";
 import { saveAs } from "file-saver";
+import DownloadIcon from "@mui/icons-material/Download";
 
 // Define props for the component
 interface PlotDownloadButtonProps {
@@ -13,6 +14,7 @@ const PlotDownloadButton: React.FC<PlotDownloadButtonProps> = ({
   fileName = "plot",
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const theme = useTheme(); // Access the theme
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -70,9 +72,16 @@ const PlotDownloadButton: React.FC<PlotDownloadButtonProps> = ({
         onClick={handleClick}
         variant="contained"
         color="primary"
-        style={{ width: "100%", height: "100%", fontSize: "12px" }}
+        style={{
+          width: "40px",
+          height: "40px",
+          minWidth: "40px",
+          borderRadius: "8px",
+          padding: 0,
+          backgroundColor: theme.palette.primary.main, // Use theme color
+        }}
       >
-        Download Plot
+        <DownloadIcon style={{ color: "#FFFFFF" }} />
       </Button>
       <Menu
         id="simple-menu"

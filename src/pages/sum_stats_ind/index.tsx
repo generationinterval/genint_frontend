@@ -8,8 +8,13 @@ import MapComponent from "@/components/sum_stats_ind/MapComponent";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import { saveAs } from "file-saver";
 import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
+import DownloadIcon from "@mui/icons-material/Download";
+import ImageIcon from "@mui/icons-material/Image";
 import Papa from "papaparse";
+import TocIcon from "@mui/icons-material/Toc";
 import "@/global.css";
+import "@/components/sum_stats_ind/HistogramComponent.css";
+import { c } from "vite/dist/node/types.d-aGj9QkWt";
 
 interface FilterState {
   var_1: string;
@@ -230,14 +235,19 @@ export const SummStatInd: React.FC = () => {
   };
   // Function to download data as CSV
   const handleDownloadCSV = () => {
-    const csv = Papa.unparse(data); // Convert JSON to CSV
+    const csv = Papa.unparse(data);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "data.csv"); // Use file-saver to download
+    saveAs(blob, "data.csv");
   };
 
   // Inside your component
   const plotRef = useRef<HTMLDivElement | null>(null);
-
+  const handleOpenDataOverview = () => {
+    setViewTabValue(1); // Set tab to Data Overview view
+  };
+  const handleOpenPlot = () => {
+    setViewTabValue(0); // Set tab to Visualization view
+  };
   const handleDownloadPlot = () => {
     const svgElement = plotRef.current?.querySelector("svg"); // Get the SVG element
     if (!svgElement) return;
@@ -389,38 +399,92 @@ export const SummStatInd: React.FC = () => {
               style={{
                 position: "absolute",
                 bottom: "10px",
-                left: "10px",
+                right: "45px", // Position in the lower right corner
                 display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-                width: "20%",
+                flexDirection: "row",
+                gap: "5px", // Reduce the gap between the buttons
+                width: "auto", // Adjust width to fit the buttons
               }}
             >
               <PlotDownloadButton plotRef={plotRef} fileName="plot" />
+              <Button
+                onClick={handleOpenDataOverview}
+                variant="contained"
+                color="primary"
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  minWidth: "40px",
+                  borderRadius: "8px",
+                  padding: 0,
+                }}
+              >
+                <TocIcon style={{ color: "#FFFFFF" }} />
+              </Button>
             </div>
           </Grid>
         )}
         {viewTabValue === 1 && !loading && isFiltersApplied && (
-          <>
-            <div style={{ flexGrow: 1 }}>
-              <DataGrid
-                rows={data}
-                columns={columns}
-                pagination
-                autoPageSize // Automatically calculate the number of rows based on the container's height
-                getRowId={(row) => row.lin} // Ensure correct row identification
-              />
-            </div>
+          <Grid
+            item
+            xs={12}
+            style={{
+              width: "100%",
+              height: "100%",
+              flexGrow: 1,
+              position: "relative",
+            }}
+          >
+            <DataGrid
+              rows={data}
+              columns={columns}
+              pagination
+              autoPageSize // Automatically calculate the number of rows based on the container's height
+              getRowId={(row) => row.lin} // Ensure correct row identification
+            />
 
-            <Button
-              onClick={handleDownloadCSV}
-              variant="contained"
-              color="primary"
-              style={{ width: "120px", fontSize: "12px" }}
+            {/* Positioned Buttons for CSV and Plot View */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "10px",
+                right: "45px",
+                display: "flex",
+                flexDirection: "row",
+                gap: "5px",
+                width: "auto",
+              }}
             >
-              Download CSV
-            </Button>
-          </>
+              <Button
+                onClick={handleDownloadCSV}
+                variant="contained"
+                color="primary"
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  minWidth: "40px",
+                  borderRadius: "8px",
+                  padding: 0,
+                }}
+              >
+                <DownloadIcon style={{ color: "#FFFFFF" }} />
+              </Button>
+              <Button
+                onClick={handleOpenPlot}
+                variant="contained"
+                color="primary"
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  minWidth: "40px",
+                  borderRadius: "8px",
+                  padding: 0,
+                }}
+              >
+                <ImageIcon style={{ color: "#FFFFFF" }} />
+              </Button>
+            </div>
+          </Grid>
         )}
         {!loading && !isFiltersApplied && <div>No data to display yet.</div>}
       </Grid>

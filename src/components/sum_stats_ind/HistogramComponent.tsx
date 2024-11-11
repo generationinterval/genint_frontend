@@ -118,11 +118,15 @@ const createColorScale = (
     };
 
     legendData = uniqueValues.map((value) => ({
-      label: String(value),
+      label:
+        variables.mappingToLong[
+          value as keyof typeof variables.mappingToLong
+        ] || String(value),
       color: colorScale(value),
     }));
     discreteOrContinuous = "discrete";
     globalColorOrder = uniqueValues; // Set global order for categorical values
+    console.log(legendData);
   }
 
   return { getColor, legendData, discreteOrContinuous, globalColorOrder };
@@ -263,7 +267,7 @@ const drawHistogram = (
     const colorGroups = d3.group(data, (d) => getColor(d));
 
     colorGroups.forEach((groupData, color) => {
-      const container = d3.select("#histogram-container"); // Assuming you have a div with this id
+      const container = d3.select("#plot-container"); // Assuming you have a div with this id
       const tooltip = container.append("div").attr("class", "tooltip");
 
       const mean = d3.mean(
@@ -416,7 +420,7 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
   }, [isSidebarVisible]);
   return (
     <div
-      id="histogram-container"
+      id="plot-container"
       ref={containerRef}
       style={{ width: "100%", height: "100%", position: "relative" }}
     >
@@ -443,13 +447,9 @@ const fullHistogram = (
   d3.select(svgElement).selectAll("*").remove();
 
   const container = svgElement.parentElement;
-  const margin = { top: 30, right: 40, bottom: 40, left: 50 };
-  const width = container
-    ? container.clientWidth - margin.left - margin.right
-    : 960;
-  const height = container
-    ? container.clientHeight - margin.top - margin.bottom
-    : 600;
+  const margin = { top: 20, right: 0, bottom: 25, left: 50 };
+  const width = container ? container.clientWidth : 960;
+  const height = container ? container.clientHeight : 600;
   const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
     createColorScale(data, col);
   // Extract unique values for faceting directly from the data
@@ -474,11 +474,11 @@ const fullHistogram = (
   const plotWidth =
     numCols === 1
       ? width - margin.right - margin.left
-      : width / numCols - colPadding;
+      : (width - margin.right - margin.left) / numCols - colPadding;
   const plotHeight =
     numRows === 1
       ? height - margin.bottom - margin.top
-      : height / numRows - rowPadding;
+      : (height - margin.bottom - margin.top) / numRows - rowPadding;
 
   const svg = d3
     .select(svgElement)
@@ -496,7 +496,7 @@ const fullHistogram = (
     const legendHeight = 20; // Height of the gradient
     const legend = svg.append("g").attr(
       "transform",
-      `translate(${width / 2 - legendWidth / 2}, ${height - 20})` // Center horizontally and place at the bottom
+      `translate(${width / 2 - legendWidth / 2}, ${height - 70})` // Center horizontally and place at the bottom
     );
     const extent = legendData[0].extent;
 
@@ -557,36 +557,38 @@ const fullHistogram = (
     }
   } else {
     // Discrete legend
-    const itemWidth = 100; // Adjust based on your layout
+    const padding = 30;
+    let cumulativeWidth = 0;
     const legend = svg.append("g").attr(
       "transform",
-      `translate(${(width - legendData.length * itemWidth) / 2}, ${
-        height - 20
-      })` // Center horizontally and place at the bottom
+      `translate(${margin.left}, ${height - 70})` // Start legend at the leftmost point of the container
     );
 
-    // Create rectangles for each discrete item
-    legend
-      .selectAll("rect")
-      .data(legendData)
-      .enter()
-      .append("rect")
-      .attr("x", (d, i) => i * itemWidth) // Horizontal positioning
-      .attr("y", 0) // Align all items vertically
-      .attr("width", 18)
-      .attr("height", 18)
-      .style("fill", (d) => d.color);
+    // Create legend items dynamically
+    legendData.forEach((d, i) => {
+      // Append rectangle for the color box
+      const rect = legend
+        .append("rect")
+        .attr("x", cumulativeWidth)
+        .attr("y", 0)
+        .attr("width", 18)
+        .attr("height", 18)
+        .style("fill", d.color);
 
-    // Add the legend labels (text)
-    legend
-      .selectAll("text")
-      .data(legendData)
-      .enter()
-      .append("text")
-      .attr("x", (d, i) => i * itemWidth + 24) // Position text next to the rectangle
-      .attr("y", 9) // Center the text vertically with the rectangle
-      .attr("dy", ".35em")
-      .text((d) => d.label);
+      // Append text label
+      const text = legend
+        .append("text")
+        .attr("x", cumulativeWidth + 24) // Position text next to the rectangle
+        .attr("y", 9) // Center text vertically with the rectangle
+        .attr("dy", ".35em")
+        .text(d.label);
+
+      const textNode = text.node();
+      if (textNode) {
+        const textWidth = textNode.getBBox().width;
+        cumulativeWidth += 18 + textWidth + padding; // Update cumulative width with rectangle, text, and padding
+      }
+    });
   }
 
   if (facetingRequiredX && facetingRequiredY) {

@@ -35,6 +35,17 @@ const CustomTreeItemRoot = styled(TreeItem2Root)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
+// Helper function to count selected children for each node
+const countSelectedChildren = (node: any, selectedItems: string[]): number => {
+  if (!node.children) return 0;
+  let count = 0;
+  node.children.forEach((child: any) => {
+    if (selectedItems.includes(child.id)) count++;
+    count += countSelectedChildren(child, selectedItems);
+  });
+  return count;
+};
+
 const CustomTreeItemContent = styled(TreeItem2Content)(({ theme }) => ({
   marginBottom: theme.spacing(0.3),
   color: theme.palette.text.secondary,
@@ -68,14 +79,23 @@ const CustomTreeItemGroupTransition = styled(TreeItem2GroupTransition)(
   })
 );
 
+// Update CustomTreeItem component to display count of selected children
 const CustomTreeItem = React.memo(
   React.forwardRef(function CustomTreeItem(
     props: UseTreeItem2Parameters & {
       labelIcon: React.ElementType<SvgIconProps>;
+      selectedChildrenCount: number;
     },
     ref: React.Ref<HTMLLIElement>
   ) {
-    const { id, itemId, label, children, labelIcon: LabelIcon } = props;
+    const {
+      id,
+      itemId,
+      label,
+      children,
+      labelIcon: LabelIcon,
+      selectedChildrenCount,
+    } = props;
     const {
       getRootProps,
       getContentProps,
@@ -115,6 +135,15 @@ const CustomTreeItem = React.memo(
               >
                 {label}
               </Typography>
+              {/* Display the count of selected children */}
+              {selectedChildrenCount > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{ ml: 1, color: "text.secondary" }}
+                >
+                  ({selectedChildrenCount})
+                </Typography>
+              )}
             </Box>
           </CustomTreeItemContent>
           {children && (
@@ -126,18 +155,22 @@ const CustomTreeItem = React.memo(
   })
 );
 
-// Recursive function to render tree items
+// Recursive function to render tree items and pass selectedChildrenCount
 const renderTreeItems = (nodes: any, selectedItems: string[]) => {
-  return nodes.map((node: any) => (
-    <CustomTreeItem
-      key={node.id}
-      itemId={node.id}
-      label={node.name}
-      labelIcon={getIconForLevel(node.id)}
-    >
-      {node.children ? renderTreeItems(node.children, selectedItems) : null}
-    </CustomTreeItem>
-  ));
+  return nodes.map((node: any) => {
+    const selectedChildrenCount = countSelectedChildren(node, selectedItems);
+    return (
+      <CustomTreeItem
+        key={node.id}
+        itemId={node.id}
+        label={node.name}
+        labelIcon={getIconForLevel(node.id)}
+        selectedChildrenCount={selectedChildrenCount}
+      >
+        {node.children ? renderTreeItems(node.children, selectedItems) : null}
+      </CustomTreeItem>
+    );
+  });
 };
 
 // Helper function to get appropriate icon for node levels
