@@ -78,6 +78,26 @@ export const NavBar: React.FC<NonNullable<unknown>> = () => {
                   >
                     Feedback Document
                   </Button>
+                  <Button
+                    variant="contained"
+                    href="https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0"
+                    sx={{
+                      backgroundColor: "#4CAF50", // Bright green
+                      color: "#FFF", // White text
+                      borderColor: "#388E3C", // Slightly darker green
+                      fontWeight: "bold",
+                      padding: "10px 20px",
+                      fontSize: "16px",
+                      boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.3)", // Add shadow for depth
+                      textTransform: "uppercase", // Optional for emphasis
+                      "&:hover": {
+                        backgroundColor: "#66BB6A", // Lighter green on hover
+                        boxShadow: "0px 6px 12px rgba(0, 0, 0, 0.5)", // Enhance shadow on hover
+                      },
+                    }}
+                  >
+                    Latest changes!
+                  </Button>
 
                   {/*                  <Button
                     variant="contained"

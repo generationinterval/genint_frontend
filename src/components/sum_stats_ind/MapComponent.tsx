@@ -159,6 +159,17 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const popColorScale = d3
     .scaleOrdinal(d3.schemeSet2)
     .domain([...new Set(data.map((d) => d.pop))]);
+
+  const baseZoom = 5; // Reference zoom level
+  const baseRadiusData = map_data_rad; // Base radius for data circles
+  const baseRadiusReg = map_reg_rad; // Base radius for region circles
+  const baseRadiusPop = map_pop_rad; // Base radius for population circles
+  const baseRadiusInd = map_ind_rad; // Base radius for individual circles
+  function getScaleFactor(currentZoom: number) {
+    const scale = Math.pow(2, currentZoom - baseZoom);
+    return scale;
+  }
+
   useEffect(() => {
     if (!mapRef.current) return;
     const bounds = L.latLngBounds(
@@ -175,7 +186,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
       maxBounds: bounds, // Set max bounds to restrict panning entirely
       maxBoundsViscosity: 1.0, // Set viscosity to 1 to completely block panning beyond bounds
       worldCopyJump: false, // Disable world copy to prevent wrapping at boundaries
+      attributionControl: false, // Disable attribution control
     });
+    // Create a new attribution control with position 'bottomleft'
+    L.control
+      .attribution({
+        position: "bottomleft", // Position the attribution control in the lower left
+      })
+      .addTo(map);
 
     // Add a tile layer (OpenStreetMap)
     L.tileLayer(
@@ -230,10 +248,32 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Function to update the circles when the map moves
     // Update the circle positions when the map is zoomed or moved
     function updateCircles() {
+      const currentZoom = map.getZoom();
+      const scaleFactor = getScaleFactor(currentZoom);
+
       svg
-        .selectAll("circle")
+        .selectAll(".circle_data")
         .attr("cx", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).x)
-        .attr("cy", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).y);
+        .attr("cy", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).y)
+        .attr("r", baseRadiusData * scaleFactor);
+
+      svg
+        .selectAll(".circle_reg")
+        .attr("cx", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).x)
+        .attr("cy", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).y)
+        .attr("r", baseRadiusReg * scaleFactor);
+
+      svg
+        .selectAll(".circle_pop")
+        .attr("cx", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).x)
+        .attr("cy", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).y)
+        .attr("r", baseRadiusPop * scaleFactor);
+
+      svg
+        .selectAll(".circle_ind")
+        .attr("cx", (d: any) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
+        .attr("cy", (d: any) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
+        .attr("r", baseRadiusInd * scaleFactor);
     }
 
     const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
@@ -250,6 +290,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     // Remove previous circles to avoid duplication
     svg.selectAll(".circle_data, .circle_reg, .circle_pop").remove();
+    const currentZoom = map.getZoom();
+    const scaleFactor = getScaleFactor(currentZoom);
 
     // Data attribute circles
     if (map_data) {
@@ -261,7 +303,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .attr("class", "circle_data")
         .attr("cx", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
         .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-        .attr("r", map_data_rad)
+        .attr("r", baseRadiusData * scaleFactor)
         .attr("fill", (d) => dataColorScale(d.dat))
         .attr("stroke", "black")
         .attr("stroke-width", 0)
@@ -278,7 +320,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .attr("class", "circle_reg")
         .attr("cx", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
         .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-        .attr("r", map_reg_rad)
+        .attr("r", baseRadiusReg * scaleFactor)
         .attr("fill", (d) => regColorScale(d.reg))
         .attr("stroke", "black")
         .attr("stroke-width", 0)
@@ -295,7 +337,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .attr("class", "circle_pop")
         .attr("cx", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
         .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-        .attr("r", map_pop_rad)
+        .attr("r", baseRadiusPop * scaleFactor)
         .attr("fill", (d) => popColorScale(d.pop))
         .attr("stroke", "black")
         .attr("stroke-width", 0)
@@ -318,12 +360,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
       .data(jitteredData)
       .enter()
       .append("circle")
+      .attr("class", "circle_ind")
       .attr("cx", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
       .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-      .attr("r", map_ind_rad)
+      .attr("r", baseRadiusInd * scaleFactor)
       .attr("fill", (d) => getColor(d))
-      .attr("stroke", "black")
-      .attr("stroke-width", 0.5)
       .attr("fill-opacity", 1);
 
     map.on("moveend", updateCircles);
@@ -513,14 +554,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
   ]);
 
   return (
-    <div style={{ position: "relative", height: "94%", width: "100%" }}>
+    <div style={{ position: "relative", height: "100%", width: "100%" }}>
       <div ref={mapRef} id="mapid" style={{ height: "100%", width: "100%" }} />
       <div
         id="legend"
         style={{
           position: "absolute",
-          bottom: "10px",
-          left: "10px",
+          bottom: "3%",
+          left: "1%",
           backgroundColor: "white",
           padding: "10px",
           borderRadius: "4px",

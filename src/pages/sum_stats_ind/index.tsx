@@ -14,7 +14,7 @@ import Papa from "papaparse";
 import TocIcon from "@mui/icons-material/Toc";
 import "@/global.css";
 import "@/components/sum_stats_ind/HistogramComponent.css";
-import { c } from "vite/dist/node/types.d-aGj9QkWt";
+import "@/pages/sum_stats_ind/index.css";
 
 interface FilterState {
   var_1: string;
@@ -373,20 +373,25 @@ export const SummStatInd: React.FC = () => {
                 max_y_axis={filters.max_y_axis}
               />
             ) : filters.plot === "Map" ? (
-              <MapComponent
-                data={data}
-                col={filters.var_1_mapped}
-                col_unmapped={filters.var_1}
-                map_data={filters.map_data}
-                map_data_rad={filters.map_data_rad}
-                map_reg={filters.map_reg}
-                map_reg_rad={filters.map_reg_rad}
-                map_pop={filters.map_pop}
-                map_pop_rad={filters.map_pop_rad}
-                map_ind_rad={filters.map_ind_rad}
-                map_lat_jit={filters.map_lat_jit}
-                map_lon_jit={filters.map_lon_jit}
-              />
+              <div
+                className="map-container"
+                style={{ width: "100%", height: "100%", zIndex: 0 }}
+              >
+                <MapComponent
+                  data={data}
+                  col={filters.var_1_mapped}
+                  col_unmapped={filters.var_1}
+                  map_data={filters.map_data}
+                  map_data_rad={filters.map_data_rad}
+                  map_reg={filters.map_reg}
+                  map_reg_rad={filters.map_reg_rad}
+                  map_pop={filters.map_pop}
+                  map_pop_rad={filters.map_pop_rad}
+                  map_ind_rad={filters.map_ind_rad}
+                  map_lat_jit={filters.map_lat_jit}
+                  map_lon_jit={filters.map_lon_jit}
+                />
+              </div>
             ) : (
               <div>No plot type selected</div>
             )}
@@ -441,6 +446,7 @@ export const SummStatInd: React.FC = () => {
 
             {/* Positioned Buttons for CSV and Plot View */}
             <div
+              className="button-container"
               style={{
                 position: "absolute",
                 bottom: "10px",
@@ -449,6 +455,8 @@ export const SummStatInd: React.FC = () => {
                 flexDirection: "row",
                 gap: "5px",
                 width: "auto",
+                zIndex: 9999,
+                pointerEvents: "auto",
               }}
             >
               <Button
