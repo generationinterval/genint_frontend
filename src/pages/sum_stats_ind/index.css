@@ -18,3 +18,15 @@ gap: 5px;
 z-index: 9999; /* Ensure buttons are above the map */
 pointer-events: auto; /* Ensure the buttons remain clickable */
 }
+
+.custom-data-grid .super-app-theme--header {
+  background-color: #003d73; /* Header background color */
+  color: #FFFFFF; /* Header text color for contrast */
+  font-weight: bold; /* Bold text for visibility */
+  text-align: center; /* Center text alignment */
+}
+
+.custom-data-grid .MuiDataGrid-cell {
+  background-color: #FFFFFF;
+  color: #000000; /* Cell text color */
+}

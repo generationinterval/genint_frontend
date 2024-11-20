@@ -280,15 +280,60 @@ export const SummStatInd: React.FC = () => {
     img.src = url; // Set image source to the URL
   };
   const columns: GridColDef[] = [
-    { field: "lin", headerName: "Individual_Dataset", width: 150 },
-    { field: "ind", headerName: "Individual", width: 150 },
-    { field: "dat", headerName: "Data", width: 150 },
-    { field: "chrom", headerName: "Chromosome", width: 130 },
-    { field: "anc", headerName: "Ancestry", width: 130 },
-    { field: "hap", headerName: "Haplotype", width: 130 },
-    { field: "len_mea", headerName: "Mean Length (bp)", width: 150 },
-    { field: "len_med", headerName: "Median Length (bp)", width: 150 },
-    { field: "seq", headerName: "Sequence", width: 130 },
+    {
+      field: "lin",
+      headerName: "Individual_Dataset",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
+    {
+      field: "ind",
+      headerName: "Individual",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
+    {
+      field: "dat",
+      headerName: "Data",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
+    {
+      field: "chrom",
+      headerName: "Chromosome",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
+    {
+      field: "anc",
+      headerName: "Ancestry",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
+    {
+      field: "hap",
+      headerName: "Haplotype",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
+    {
+      field: "len_mea",
+      headerName: "Mean Length (bp)",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
+    {
+      field: "len_med",
+      headerName: "Median Length (bp)",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
+    {
+      field: "seq",
+      headerName: "Sequence",
+      width: 170,
+      headerClassName: "super-app-theme--header", // Apply header class
+    },
     // Add more columns as needed
   ];
   return (
@@ -437,11 +482,14 @@ export const SummStatInd: React.FC = () => {
             }}
           >
             <DataGrid
+              className="custom-data-grid"
               rows={data}
               columns={columns}
               pagination
               autoPageSize // Automatically calculate the number of rows based on the container's height
-              getRowId={(row) => row.lin} // Ensure correct row identification
+              getRowId={(row) => row.lin}
+
+              // Ensure correct row identification
             />
 
             {/* Positioned Buttons for CSV and Plot View */}
