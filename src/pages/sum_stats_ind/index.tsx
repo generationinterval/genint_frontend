@@ -195,7 +195,7 @@ export const SummStatInd: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:2208/api/histogram-data", {
+      const response = await fetch("http://localhost:2208/api/sum-ind-data", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -308,10 +308,6 @@ export const SummStatInd: React.FC = () => {
             overflowY: "auto",
           }}
         >
-          <Tabs value={viewTabValue} onChange={handleViewTabChange}>
-            <Tab label="Visualization" />
-            <Tab label="Data Overview" />
-          </Tabs>
           <SideFilter
             tabValue={tabValue}
             setTabValue={setTabValue}

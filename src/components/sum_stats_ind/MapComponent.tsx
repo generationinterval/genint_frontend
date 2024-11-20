@@ -3,6 +3,7 @@ import L from "leaflet";
 import * as d3 from "d3";
 import "leaflet/dist/leaflet.css";
 import { variables } from "@/assets/FilterOptions";
+import { data_cmaps, reg_cmaps } from "@/assets/colormaps";
 
 interface DataPoint {
   ind: string;
@@ -92,9 +93,9 @@ const createColorScale = (
 
     legendData = isExtentValid
       ? [
-        { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
-        { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
-      ]
+          { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
+          { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
+        ]
       : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
     discreteOrContinuous = "continuous";
     globalColorOrder = []; // Continuous variables don't have a strict "order" per se
@@ -147,7 +148,17 @@ const MapComponent: React.FC<MapComponentProps> = ({
   map_lon_jit,
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const dataColorScale = (dat: string) => {
+    return data_cmaps[dat as keyof typeof data_cmaps] || "#CCCCCC";
+  };
 
+  const regColorScale = (reg: string) => {
+    return reg_cmaps[reg as keyof typeof reg_cmaps] || "#CCCCCC";
+  };
+
+  const popColorScale = d3
+    .scaleOrdinal(d3.schemeSet2)
+    .domain([...new Set(data.map((d) => d.pop))]);
   useEffect(() => {
     if (!mapRef.current) return;
     const bounds = L.latLngBounds(
@@ -159,7 +170,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const map = L.map(mapRef.current, {
       center: [47, 2],
       zoom: 5,
-      maxZoom: 6, // Set max zoom level to prevent zooming beyond bounds
+      maxZoom: 10, // Set max zoom level to prevent zooming beyond bounds
       minZoom: 2.25, // Set min zoom level to prevent zooming beyond bounds
       maxBounds: bounds, // Set max bounds to restrict panning entirely
       maxBoundsViscosity: 1.0, // Set viscosity to 1 to completely block panning beyond bounds
@@ -168,11 +179,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     // Add a tile layer (OpenStreetMap)
     L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+      "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
       {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 6,
+        maxZoom: 10,
       }
     ).addTo(map);
 
@@ -184,36 +195,38 @@ const MapComponent: React.FC<MapComponentProps> = ({
       const point = map.latLngToLayerPoint(new L.LatLng(lat, lon));
       return point;
     }
+    function generateGaussianNoise(mean: number, stdDev: number): number {
+      let u = 0,
+        v = 0;
+      while (u === 0) u = Math.random(); // Ensure u is not zero
+      while (v === 0) v = Math.random();
+      return (
+        stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v) +
+        mean
+      );
+    }
+
     function applyJitter(
       lat: number,
       lon: number,
       map_lat_jit: number,
       map_lon_jit: number
     ) {
-      const jitterLat = lat + (Math.random() - 0.5) * map_lat_jit;
-      const jitterLon = lon + (Math.random() - 0.5) * map_lon_jit;
+      const jitterLat = lat + generateGaussianNoise(0, map_lat_jit);
+      const jitterLon = lon + generateGaussianNoise(0, map_lon_jit);
       return { jitterLat, jitterLon };
     }
+
     const jitteredData = data.map((d) => {
       const { jitterLat, jitterLon } = applyJitter(
         d.lat,
         d.lon,
-        map_lat_jit,
-        map_lon_jit
+        map_lat_jit * 0.5,
+        map_lon_jit * 0.5
       );
       return { ...d, jitteredLat: jitterLat, jitteredLon: jitterLon };
     });
-    const dataColorScale = d3
-      .scaleOrdinal(d3.schemeCategory10) // You can replace with other schemes if needed
-      .domain([...new Set(data.map((d) => d.dat))]);
 
-    const regColorScale = d3
-      .scaleOrdinal(d3.schemeTableau10)
-      .domain([...new Set(data.map((d) => d.reg))]);
-
-    const popColorScale = d3
-      .scaleOrdinal(d3.schemeSet2)
-      .domain([...new Set(data.map((d) => d.pop))]);
     // Function to update the circles when the map moves
     // Update the circle positions when the map is zoomed or moved
     function updateCircles() {
@@ -415,7 +428,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     function createDiscreteLegend(
       container: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
       title: string,
-      colorScale: d3.ScaleOrdinal<string, string>
+      colorInput: Record<string, string> | d3.ScaleOrdinal<string, string>,
+      selectedValues: string[]
     ) {
       const legend = container.append("div").style("margin-bottom", "10px");
 
@@ -425,37 +439,61 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .style("font-weight", "bold")
         .style("margin-bottom", "5px");
 
-      colorScale.domain().forEach((value: string) => {
-        const item = legend
-          .append("div")
-          .style("display", "flex")
-          .style("align-items", "center")
-          .style("margin-bottom", "3px");
+      // Handle both predefined colormaps and D3 scales
+      selectedValues.forEach((key) => {
+        const color =
+          typeof colorInput === "function"
+            ? colorInput(key) // For D3 scales
+            : colorInput[key]; // For plain colormap objects
 
-        item
-          .append("div")
-          .style("width", "18px")
-          .style("height", "18px")
-          .style("background-color", colorScale(value))
-          .style("margin-right", "8px");
+        if (color) {
+          const item = legend
+            .append("div")
+            .style("display", "flex")
+            .style("align-items", "center")
+            .style("margin-bottom", "3px");
 
-        item.append("span").text(value);
+          item
+            .append("div")
+            .style("width", "18px")
+            .style("height", "18px")
+            .style("background-color", color)
+            .style("margin-right", "8px");
+
+          item.append("span").text(key);
+        }
       });
     }
 
     // Add Dataset legend if map_data is enabled
-    if (map_data) {
-      createDiscreteLegend(legendContainer, "Dataset", dataColorScale);
-    }
-
-    // Add Region legend if map_reg is enabled
     if (map_reg) {
-      createDiscreteLegend(legendContainer, "Region", regColorScale);
+      const selectedRegionValues = [...new Set(data.map((d) => d.reg))];
+      createDiscreteLegend(
+        legendContainer,
+        "Region",
+        reg_cmaps,
+        selectedRegionValues
+      );
     }
 
-    // Add Population legend if map_pop is enabled
+    if (map_data) {
+      const selectedDataValues = [...new Set(data.map((d) => d.dat))];
+      createDiscreteLegend(
+        legendContainer,
+        "Dataset",
+        data_cmaps,
+        selectedDataValues
+      );
+    }
+
     if (map_pop) {
-      createDiscreteLegend(legendContainer, "Population", popColorScale);
+      const selectedPopulationValues = [...new Set(data.map((d) => d.pop))];
+      createDiscreteLegend(
+        legendContainer,
+        "Population",
+        popColorScale,
+        selectedPopulationValues
+      );
     }
 
     return () => {

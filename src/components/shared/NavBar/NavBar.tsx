@@ -32,7 +32,10 @@ export const NavBar: React.FC<NonNullable<unknown>> = () => {
                 </Button>
               </Grid>
               <Grid item>
-                <Typography color="primary" sx={{ color: 'primary.contrastText' }}>
+                <Typography
+                  color="primary"
+                  sx={{ color: "primary.contrastText" }}
+                >
                   Generation Interval
                 </Typography>
               </Grid>
@@ -55,6 +58,12 @@ export const NavBar: React.FC<NonNullable<unknown>> = () => {
                   </Button>
                   <Button variant="contained" href={paths.fragment.vis_per_reg}>
                     Frag Vis Per reg
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    href="https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0"
+                  >
+                    Feedback Document!
                   </Button>
                   {/*                  <Button
                     variant="contained"
