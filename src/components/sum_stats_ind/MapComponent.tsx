@@ -81,7 +81,7 @@ const createColorScale = (
     let extent = d3.extent(data, (d) => +d[col as keyof DataPoint]!);
     const isExtentValid = extent[0] !== undefined && extent[1] !== undefined;
     const colorScale = d3
-      .scaleSequential(d3.interpolateViridis)
+      .scaleSequential(d3.interpolateTurbo)
       .domain(extent as [number, number]);
 
     getColor = (d) => {
@@ -367,7 +367,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         const extent = legendData[0].extent;
         const colorScale = d3
-          .scaleSequential(d3.interpolateViridis)
+          .scaleSequential(d3.interpolateTurbo)
           .domain(extent);
 
         // Create gradient stops
