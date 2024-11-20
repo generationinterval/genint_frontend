@@ -60,11 +60,25 @@ export const NavBar: React.FC<NonNullable<unknown>> = () => {
                     Frag Vis Per reg
                   </Button>
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     href="https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0"
+                    sx={{
+                      backgroundColor: "#FFDD57", // Bright yellow
+                      color: "#000", // Black text
+                      borderColor: "#FFAA00", // Slightly darker yellow
+                      fontWeight: "bold",
+                      padding: "10px 20px",
+                      fontSize: "16px",
+                      boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.3)", // Add shadow for depth
+                      "&:hover": {
+                        backgroundColor: "#FFC107", // Slightly darker yellow on hover
+                        boxShadow: "0px 6px 12px rgba(0, 0, 0, 0.5)", // Enhance shadow on hover
+                      },
+                    }}
                   >
-                    Feedback Document!
+                    Feedback Document
                   </Button>
+
                   {/*                  <Button
                     variant="contained"
                     href={paths.summary_stats.per_ind}
