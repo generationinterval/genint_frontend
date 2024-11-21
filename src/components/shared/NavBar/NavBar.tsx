@@ -12,54 +12,150 @@ import {
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import { paths } from "@/paths";
 
-export const NavBar: React.FC<NonNullable<unknown>> = () => {
+export const NavBar: React.FC = () => {
   const { isSidebarVisible, toggleSidebar } = useSidebar();
-
+  const handleNavigation = (url: string) => {
+    window.location.href = url; // Navigate to the specified URL
+  };
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="fixed">
-        <Toolbar>
-          <Container maxWidth="xl">
-            <Grid
-              container
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
+      <AppBar
+        position="fixed"
+        sx={{
+          height: "7vh", // Set height explicitly
+          backgroundColor: "primary.main",
+        }}
+      >
+        <Toolbar
+          sx={{
+            height: "100%", // Match Toolbar height with AppBar
+            display: "flex",
+            alignItems: "center", // Center content vertically
+            justifyContent: "space-between", // Spread out items horizontally
+          }}
+        >
+          <Container maxWidth="xl" sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <Typography
+              sx={{
+                color: "primary.contrastText",
+                fontWeight: "bold",
+                fontSize: "1.2rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
             >
-              <Grid item>
-                <Button variant="contained" onClick={toggleSidebar}>
-                  {isSidebarVisible ? "Collapse Options" : "Expand Options"}
-                </Button>
-              </Grid>
-              <Grid item>
-                <Typography
-                  color="primary"
-                  sx={{ color: "primary.contrastText" }}
-                >
-                  Generation Interval
-                </Typography>
-              </Grid>
-              <Grid item>
-                <Stack direction="row" spacing={2}>
-                  <Button variant="contained" href="/">
-                    Home
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    About
-                  </Button>
-                  <Button
-                    variant="contained"
-                    href={paths.summary_stats.per_ind}
-                  >
-                    Summ Per Ind
-                  </Button>
-                  <Button variant="contained" href={paths.fragment.vis_per_ind}>
-                    Frag Vis Per Ind
-                  </Button>
-                  <Button variant="contained" href={paths.fragment.vis_per_reg}>
-                    Frag Vis Per reg
-                  </Button>
-                  <Button
+              Generation Interval
+            </Typography>
+            {/* <Stack
+              direction="row"
+              spacing={2}
+              sx={{
+                flexGrow: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
+                height: "100%"
+              }}
+            > */}
+            <Stack
+              direction="row"
+              spacing={0} // Remove default spacing between items
+              sx={{
+                flexGrow: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
+                height: "100%",
+                width: "40%"
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center", // Center text horizontally
+                  cursor: "pointer",
+                  flexGrow: 1, // Allow the box to grow equally with others
+                  color: "primary.contrastText",
+                  height: "100%",
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
+                  },
+                }}
+                onClick={() => handleNavigation(paths.summary_stats.per_ind)}
+              >
+                Summ Per Ind
+              </Box>
+              <Box
+                sx={{
+                  borderLeft: "1px solid white", // Separator line
+                  height: "50%", // Adjust height of the separator
+                  alignSelf: "center", // Center separator vertically
+                }}
+              />
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  flexGrow: 1,
+                  color: "primary.contrastText",
+                  height: "100%",
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  },
+                }}
+                onClick={() => handleNavigation(paths.fragment.vis_per_ind)}
+              >
+                Frag Vis Per Ind
+              </Box>
+              <Box
+                sx={{
+                  borderLeft: "1px solid white",
+                  height: "50%",
+                  alignSelf: "center",
+                }}
+              />
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  flexGrow: 1,
+                  color: "primary.contrastText",
+                  height: "100%",
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  },
+                }}
+                onClick={() => handleNavigation(paths.fragment.vis_per_reg)}
+              >
+                Frag Vis Per Reg
+              </Box>
+            </Stack>
+
+            {/* Right Partition */}
+            <Typography
+              sx={{
+                color: "primary.contrastText",
+                fontSize: "0.9rem",
+                fontWeight: "bold",
+                cursor: "pointer",
+              }}
+              onClick={toggleSidebar}
+            >
+              {isSidebarVisible ? "Collapse Options" : "Expand Options"}
+            </Typography>
+
+          </Container>
+        </Toolbar>
+      </AppBar>
+    </Box>
+  );
+};  /* <Button
                     variant="contained"
                     href="https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0"
                     sx={{
@@ -98,55 +194,4 @@ export const NavBar: React.FC<NonNullable<unknown>> = () => {
                   >
                     Latest changes!
                   </Button>
-
-                  {/*                  <Button
-                    variant="contained"
-                    href={paths.summary_stats.per_ind}
-                  >
-                    Summ Per Group
-                  </Button>
-                  <Button
-                    variant="contained"
-                    href={paths.summary_stats.per_ind}
-                  >
-                    Summ Per Frag
-                  </Button> */}
-                  {/* <Button variant="contained" href="/">
-                    Summary stats per individual
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    Summary stats per group
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    Summary stats per fragment
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    Fragment visualization per individual
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    Fragment comparison per individual
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    Fragment visualization per region
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    Region sequencence accumulation
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    HMM probability stats per individual
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    Outgroup filter stats per individual
-                  </Button>
-                  <Button variant="contained" href="/about">
-                    Table summary stats per individual
-                  </Button> */}
-                </Stack>
-              </Grid>
-            </Grid>
-          </Container>
-        </Toolbar>
-      </AppBar>
-    </Box>
-  );
-};
+ */
