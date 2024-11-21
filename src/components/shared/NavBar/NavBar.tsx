@@ -18,23 +18,38 @@ export const NavBar: React.FC = () => {
     window.location.href = url; // Navigate to the specified URL
   };
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box
+      sx={{
+        flexGrow: 1,
+        height: "5vh", // Set Box height explicitly
+      }}
+    >
       <AppBar
         position="fixed"
         sx={{
-          height: "7vh", // Set height explicitly
           backgroundColor: "primary.main",
+          height: "9vh", // Explicitly set AppBar height to match Box
+          boxSizing: "border-box", // Include borders and padding in height calculation
         }}
       >
         <Toolbar
+          disableGutters // Removes default left and right padding
           sx={{
-            height: "100%", // Match Toolbar height with AppBar
+            height: "100%", // Toolbar fills the AppBar height
             display: "flex",
             alignItems: "center", // Center content vertically
             justifyContent: "space-between", // Spread out items horizontally
+            padding: 0, // Remove padding
+            margin: 0, // Remove margin
+            boxSizing: "border-box", // Ensure no extra height is added
           }}
         >
-          <Container maxWidth="xl" sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+          <Container maxWidth="xl" sx={{
+            display: "flex",
+            alignItems: "center", // Center children vertically
+            height: "100%", // Ensure the container fills the Toolbar height
+            padding: 0, // Remove any potential padding
+          }}>
             <Typography
               sx={{
                 color: "primary.contrastText",
@@ -60,25 +75,25 @@ export const NavBar: React.FC = () => {
             > */}
             <Stack
               direction="row"
-              spacing={0} // Remove default spacing between items
+              spacing={0}
               sx={{
                 flexGrow: 1,
                 justifyContent: "center",
-                alignItems: "center",
-                position: "relative",
+                alignItems: "center", // Align all items vertically in the center
                 height: "100%",
-                width: "40%"
+                width: "40%",
               }}
             >
               <Box
                 sx={{
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center", // Center text horizontally
+                  alignItems: "center", // Vertically align text
+                  justifyContent: "center", // Horizontally align text
                   cursor: "pointer",
-                  flexGrow: 1, // Allow the box to grow equally with others
+                  flexGrow: 1,
                   color: "primary.contrastText",
-                  height: "100%",
+                  height: "100%", // Ensure full height
+                  lineHeight: "normal", // Prevent extra line height padding
                   "&:hover": {
                     backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
                   },
@@ -89,9 +104,9 @@ export const NavBar: React.FC = () => {
               </Box>
               <Box
                 sx={{
-                  borderLeft: "1px solid white", // Separator line
-                  height: "50%", // Adjust height of the separator
-                  alignSelf: "center", // Center separator vertically
+                  borderLeft: "1px solid white",
+                  height: "100%", // Ensure full height for the separator
+                  alignSelf: "center", // Vertically center the separator
                 }}
               />
               <Box
@@ -103,6 +118,7 @@ export const NavBar: React.FC = () => {
                   flexGrow: 1,
                   color: "primary.contrastText",
                   height: "100%",
+                  lineHeight: "normal",
                   "&:hover": {
                     backgroundColor: "rgba(255, 255, 255, 0.2)",
                   },
@@ -114,7 +130,7 @@ export const NavBar: React.FC = () => {
               <Box
                 sx={{
                   borderLeft: "1px solid white",
-                  height: "50%",
+                  height: "100%",
                   alignSelf: "center",
                 }}
               />
@@ -127,6 +143,7 @@ export const NavBar: React.FC = () => {
                   flexGrow: 1,
                   color: "primary.contrastText",
                   height: "100%",
+                  lineHeight: "normal",
                   "&:hover": {
                     backgroundColor: "rgba(255, 255, 255, 0.2)",
                   },
@@ -137,8 +154,11 @@ export const NavBar: React.FC = () => {
               </Box>
             </Stack>
 
+
+
             {/* Right Partition */}
-            <Typography
+
+            {/*             <Typography
               sx={{
                 color: "primary.contrastText",
                 fontSize: "0.9rem",
@@ -148,8 +168,61 @@ export const NavBar: React.FC = () => {
               onClick={toggleSidebar}
             >
               {isSidebarVisible ? "Collapse Options" : "Expand Options"}
-            </Typography>
+            </Typography> */}
+            <Stack
+              direction="row"
+              spacing={0} // Remove default spacing between items
+              sx={{
+                flexGrow: 1,
+                justifyContent: "center",
+                alignItems: "right",
+                position: "right",
+                height: "7vh",
+                width: "10vh"
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center", // Center text horizontally
+                  cursor: "pointer",
+                  flexGrow: 1, // Allow the box to grow equally with others
+                  color: "#000000",
+                  height: "100%",
+                  backgroundColor: "#FFDD57",
 
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
+                  },
+                }}
+                onClick={() => handleNavigation("https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0")}
+              >
+                Feedback Document
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center", // Center text horizontally
+                  cursor: "pointer",
+                  flexGrow: 1, // Allow the box to grow equally with others
+                  color: "#000000",
+                  height: "100%",
+                  backgroundColor: "#4CAF50",
+
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
+                  },
+                }}
+                onClick={() => handleNavigation("https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0")}
+              >
+                Latest Changes
+              </Box>
+
+
+            </Stack>
           </Container>
         </Toolbar>
       </AppBar>
