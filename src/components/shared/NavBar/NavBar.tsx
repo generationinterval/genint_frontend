@@ -21,15 +21,17 @@ export const NavBar: React.FC = () => {
     <Box
       sx={{
         flexGrow: 1,
-        height: "5vh", // Set Box height explicitly
+        height: "7dvh",
+        minHeight: "70.85px", // Set Box height explicitly
       }}
     >
       <AppBar
         position="fixed"
         sx={{
           backgroundColor: "primary.main",
-          height: "9vh", // Explicitly set AppBar height to match Box
-          boxSizing: "border-box", // Include borders and padding in height calculation
+          height: "7dvh", // Explicitly set AppBar height to match Box
+          boxSizing: "border-box",
+          minHeight: "70.85px", // Include borders and padding in height calculation
         }}
       >
         <Toolbar
@@ -44,12 +46,15 @@ export const NavBar: React.FC = () => {
             boxSizing: "border-box", // Ensure no extra height is added
           }}
         >
-          <Container maxWidth="xl" sx={{
-            display: "flex",
-            alignItems: "center", // Center children vertically
-            height: "100%", // Ensure the container fills the Toolbar height
-            padding: 0, // Remove any potential padding
-          }}>
+          <Container
+            maxWidth="xl"
+            sx={{
+              display: "flex",
+              alignItems: "center", // Center children vertically
+              height: "100%", // Ensure the container fills the Toolbar height
+              padding: 0, // Remove any potential padding
+            }}
+          >
             <Typography
               sx={{
                 color: "primary.contrastText",
@@ -81,7 +86,7 @@ export const NavBar: React.FC = () => {
                 justifyContent: "center",
                 alignItems: "center", // Align all items vertically in the center
                 height: "100%",
-                width: "40%",
+                width: "40dvw",
               }}
             >
               <Box
@@ -154,8 +159,6 @@ export const NavBar: React.FC = () => {
               </Box>
             </Stack>
 
-
-
             {/* Right Partition */}
 
             {/*             <Typography
@@ -178,7 +181,7 @@ export const NavBar: React.FC = () => {
                 alignItems: "right",
                 position: "right",
                 height: "7vh",
-                width: "10vh"
+                width: "10vh",
               }}
             >
               <Box
@@ -196,7 +199,11 @@ export const NavBar: React.FC = () => {
                     backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
                   },
                 }}
-                onClick={() => handleNavigation("https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0")}
+                onClick={() =>
+                  handleNavigation(
+                    "https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0"
+                  )
+                }
               >
                 Feedback Document
               </Box>
@@ -216,19 +223,21 @@ export const NavBar: React.FC = () => {
                     backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
                   },
                 }}
-                onClick={() => handleNavigation("https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0")}
+                onClick={() =>
+                  handleNavigation(
+                    "https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0"
+                  )
+                }
               >
                 Latest Changes
               </Box>
-
-
             </Stack>
           </Container>
         </Toolbar>
       </AppBar>
     </Box>
   );
-};  /* <Button
+}; /* <Button
                     variant="contained"
                     href="https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0"
                     sx={{

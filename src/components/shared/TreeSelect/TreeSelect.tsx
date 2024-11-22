@@ -1,6 +1,7 @@
+// Import statements remain the same
 import { TreeData } from "@/assets/treeData";
 import clsx from "clsx";
-import { styled, useTheme } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -29,6 +30,7 @@ import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import CloseIcon from "@mui/icons-material/Close";
 import Chip from "@mui/material/Chip";
+import Checkbox from "@mui/material/Checkbox";
 
 // CustomTreeItem component
 const CustomTreeItemRoot = styled(TreeItem2Root)(({ theme }) => ({
@@ -37,11 +39,20 @@ const CustomTreeItemRoot = styled(TreeItem2Root)(({ theme }) => ({
 
 // Helper function to count selected children for each node
 const countSelectedChildren = (node: any, selectedItems: string[]): number => {
-  if (!node.children) return 0;
+  if (!node.children) return selectedItems.includes(node.id) ? 1 : 0;
   let count = 0;
   node.children.forEach((child: any) => {
-    if (selectedItems.includes(child.id)) count++;
     count += countSelectedChildren(child, selectedItems);
+  });
+  return count;
+};
+
+// Helper function to count total terminal descendants under a node
+const countTerminalDescendants = (node: any): number => {
+  if (!node.children) return 1; // Terminal node
+  let count = 0;
+  node.children.forEach((child: any) => {
+    count += countTerminalDescendants(child);
   });
   return count;
 };
@@ -79,100 +90,6 @@ const CustomTreeItemGroupTransition = styled(TreeItem2GroupTransition)(
   })
 );
 
-// Update CustomTreeItem component to display count of selected children
-const CustomTreeItem = React.memo(
-  React.forwardRef(function CustomTreeItem(
-    props: UseTreeItem2Parameters & {
-      labelIcon: React.ElementType<SvgIconProps>;
-      selectedChildrenCount: number;
-    },
-    ref: React.Ref<HTMLLIElement>
-  ) {
-    const {
-      id,
-      itemId,
-      label,
-      children,
-      labelIcon: LabelIcon,
-      selectedChildrenCount,
-    } = props;
-    const {
-      getRootProps,
-      getContentProps,
-      getIconContainerProps,
-      getLabelProps,
-      getGroupTransitionProps,
-      status,
-    } = useTreeItem2({ id, itemId, children, label, rootRef: ref });
-
-    return (
-      <TreeItem2Provider itemId={itemId}>
-        <CustomTreeItemRoot {...getRootProps()}>
-          <CustomTreeItemContent
-            {...getContentProps({
-              className: clsx("content", {
-                expanded: status.expanded,
-                selected: status.selected,
-                focused: status.focused,
-              }),
-            })}
-          >
-            <CustomTreeItemIconContainer {...getIconContainerProps()}>
-              <TreeItem2Icon status={status} />
-            </CustomTreeItemIconContainer>
-            <Box
-              sx={{
-                display: "flex",
-                flexGrow: 1,
-                alignItems: "center",
-                p: 0.5,
-                pr: 0,
-              }}
-            >
-              <Box component={LabelIcon} sx={{ mr: 1 }} />
-              <Typography
-                {...getLabelProps({ variant: "body2", sx: { flexGrow: 1 } })}
-              >
-                {label}
-              </Typography>
-              {/* Display the count of selected children */}
-              {selectedChildrenCount > 0 && (
-                <Typography
-                  variant="caption"
-                  sx={{ ml: 1, color: "text.secondary" }}
-                >
-                  ({selectedChildrenCount})
-                </Typography>
-              )}
-            </Box>
-          </CustomTreeItemContent>
-          {children && (
-            <CustomTreeItemGroupTransition {...getGroupTransitionProps()} />
-          )}
-        </CustomTreeItemRoot>
-      </TreeItem2Provider>
-    );
-  })
-);
-
-// Recursive function to render tree items and pass selectedChildrenCount
-const renderTreeItems = (nodes: any, selectedItems: string[]) => {
-  return nodes.map((node: any) => {
-    const selectedChildrenCount = countSelectedChildren(node, selectedItems);
-    return (
-      <CustomTreeItem
-        key={node.id}
-        itemId={node.id}
-        label={node.name}
-        labelIcon={getIconForLevel(node.id)}
-        selectedChildrenCount={selectedChildrenCount}
-      >
-        {node.children ? renderTreeItems(node.children, selectedItems) : null}
-      </CustomTreeItem>
-    );
-  });
-};
-
 // Helper function to get appropriate icon for node levels
 const getIconForLevel = (nodeId: string) => {
   if (nodeId.startsWith("dat")) {
@@ -205,6 +122,180 @@ const isTerminalNode = (nodeId: string, treeData: any[]) => {
   return findNodeById(nodeId, treeData);
 };
 
+// Helper function to find a node by ID
+const findNodeById = (id: string, nodes: any[]): any | null => {
+  for (const node of nodes) {
+    if (node.id === id) {
+      return node;
+    }
+    if (node.children) {
+      const found = findNodeById(id, node.children);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+// Helper function to get all terminal descendants under a node
+const getAllTerminalDescendants = (node: any): string[] => {
+  if (!node.children) return [node.id];
+  let ids: string[] = [];
+  node.children.forEach((child: any) => {
+    ids = ids.concat(getAllTerminalDescendants(child));
+  });
+  return ids;
+};
+
+// Update CustomTreeItem component
+const CustomTreeItem = React.memo(
+  React.forwardRef(function CustomTreeItem(
+    props: UseTreeItem2Parameters & {
+      labelIcon: React.ElementType<SvgIconProps>;
+      selectedChildrenCount: number;
+      totalTerminalDescendants: number;
+      onNodeSelectToggle: (nodeId: string) => void;
+      isRoot: boolean; // Add isRoot prop
+    },
+    ref: React.Ref<HTMLLIElement>
+  ) {
+    const {
+      id,
+      itemId,
+      label,
+      children,
+      labelIcon: LabelIcon,
+      selectedChildrenCount,
+      totalTerminalDescendants,
+      onNodeSelectToggle,
+      isRoot, // Destructure isRoot
+    } = props;
+    const {
+      getRootProps,
+      getContentProps,
+      getIconContainerProps,
+      getLabelProps,
+      getGroupTransitionProps,
+      status,
+    } = useTreeItem2({ id, itemId, children, label, rootRef: ref });
+
+    const isTerminal = !children;
+
+    // Determine selection state
+    let selectionState: "empty" | "partial" | "full" = "empty";
+    if (selectedChildrenCount === 0) {
+      selectionState = "empty";
+    } else if (selectedChildrenCount === totalTerminalDescendants) {
+      selectionState = "full";
+    } else {
+      selectionState = "partial";
+    }
+
+    return (
+      <TreeItem2Provider itemId={itemId}>
+        <CustomTreeItemRoot {...getRootProps()}>
+          <CustomTreeItemContent
+            {...getContentProps({
+              className: clsx("content", {
+                expanded: status.expanded,
+                selected: status.selected,
+                focused: status.focused,
+              }),
+            })}
+          >
+            <CustomTreeItemIconContainer {...getIconContainerProps()}>
+              <TreeItem2Icon status={status} />
+            </CustomTreeItemIconContainer>
+            <Box
+              sx={{
+                display: "flex",
+                flexGrow: 1,
+                alignItems: "center",
+                p: 0.5,
+                pr: 0,
+              }}
+            >
+              {/* Conditionally render the checkbox */}
+              {!isTerminal && !isRoot && (
+                <Checkbox
+                  edge="start"
+                  checked={selectionState === "full"}
+                  indeterminate={selectionState === "partial"}
+                  tabIndex={-1}
+                  disableRipple
+                  onClick={(event) => {
+                    event.stopPropagation(); // Prevent click from propagating
+                    onNodeSelectToggle(itemId);
+                  }}
+                />
+              )}
+              {/* Add spacing to align items when the checkbox is not rendered */}
+              {isRoot && !isTerminal && (
+                <Box sx={{ width: 24, display: "inline-block" }} />
+              )}
+              <Box component={LabelIcon} sx={{ mr: 1 }} />
+              <Typography
+                {...getLabelProps({ variant: "body2", sx: { flexGrow: 1 } })}
+              >
+                {label}
+              </Typography>
+              {/* Display the count of selected children */}
+              {selectedChildrenCount > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{ ml: 1, color: "text.secondary" }}
+                >
+                  ({selectedChildrenCount})
+                </Typography>
+              )}
+            </Box>
+          </CustomTreeItemContent>
+          {children && (
+            <CustomTreeItemGroupTransition {...getGroupTransitionProps()}>
+              {children}
+            </CustomTreeItemGroupTransition>
+          )}
+        </CustomTreeItemRoot>
+      </TreeItem2Provider>
+    );
+  })
+);
+
+// Recursive function to render tree items and pass selectedChildrenCount and totalTerminalDescendants
+const renderTreeItems = (
+  nodes: any,
+  selectedItems: string[],
+  handleNodeSelectToggle: (nodeId: string) => void,
+  level: number = 0 // Add level parameter with default value 0
+) => {
+  return nodes.map((node: any) => {
+    const selectedChildrenCount = countSelectedChildren(node, selectedItems);
+    const totalTerminalDescendants = countTerminalDescendants(node);
+    const isRoot = level === 0; // Determine if the node is the root
+
+    return (
+      <CustomTreeItem
+        key={node.id}
+        itemId={node.id}
+        label={node.name}
+        labelIcon={getIconForLevel(node.id)}
+        selectedChildrenCount={selectedChildrenCount}
+        totalTerminalDescendants={totalTerminalDescendants}
+        onNodeSelectToggle={handleNodeSelectToggle}
+        isRoot={isRoot} // Pass isRoot to CustomTreeItem
+      >
+        {node.children
+          ? renderTreeItems(
+              node.children,
+              selectedItems,
+              handleNodeSelectToggle,
+              level + 1 // Increment level for child nodes
+            )
+          : null}
+      </CustomTreeItem>
+    );
+  });
+};
+
 export function GmailTreeView({
   selectedItems,
   onSelectedItemsChange,
@@ -212,6 +303,32 @@ export function GmailTreeView({
   selectedItems: string[];
   onSelectedItemsChange: (selectedItems: string[]) => void;
 }) {
+  const handleNodeSelectToggle = useCallback(
+    (nodeId: string) => {
+      const node = findNodeById(nodeId, TreeData);
+      if (node) {
+        const terminalDescendants = getAllTerminalDescendants(node);
+        const anySelected = terminalDescendants.some((id) =>
+          selectedItems.includes(id)
+        );
+        let newSelectedItems: string[];
+        if (anySelected) {
+          // Deselect all terminal descendants
+          newSelectedItems = selectedItems.filter(
+            (id) => !terminalDescendants.includes(id)
+          );
+        } else {
+          // Select all terminal descendants
+          newSelectedItems = [
+            ...new Set([...selectedItems, ...terminalDescendants]),
+          ];
+        }
+        onSelectedItemsChange(newSelectedItems);
+      }
+    },
+    [selectedItems, onSelectedItemsChange]
+  );
+
   const handleSelectionChange = useCallback(
     (newSelectedItems: string[]) => {
       // Filter the selection to ensure only terminal nodes are selected
@@ -228,8 +345,8 @@ export function GmailTreeView({
   );
 
   const memoizedTreeItems = useMemo(
-    () => renderTreeItems(TreeData, selectedItems),
-    [selectedItems]
+    () => renderTreeItems(TreeData, selectedItems, handleNodeSelectToggle),
+    [selectedItems, handleNodeSelectToggle]
   );
 
   return (
@@ -324,9 +441,35 @@ export function GmailTreeViewWithText({
     [onSelectedItemsChange, selectedItems]
   );
 
+  const handleNodeSelectToggle = useCallback(
+    (nodeId: string) => {
+      const node = findNodeById(nodeId, TreeData);
+      if (node) {
+        const terminalDescendants = getAllTerminalDescendants(node);
+        const anySelected = terminalDescendants.some((id) =>
+          selectedItems.includes(id)
+        );
+        let newSelectedItems: string[];
+        if (anySelected) {
+          // Deselect all terminal descendants
+          newSelectedItems = selectedItems.filter(
+            (id) => !terminalDescendants.includes(id)
+          );
+        } else {
+          // Select all terminal descendants
+          newSelectedItems = [
+            ...new Set([...selectedItems, ...terminalDescendants]),
+          ];
+        }
+        onSelectedItemsChange(newSelectedItems);
+      }
+    },
+    [selectedItems, onSelectedItemsChange]
+  );
+
   const memoizedTreeItems = useMemo(
-    () => renderTreeItems(TreeData, selectedItems),
-    [selectedItems]
+    () => renderTreeItems(TreeData, selectedItems, handleNodeSelectToggle),
+    [selectedItems, handleNodeSelectToggle]
   );
 
   return (
@@ -339,16 +482,24 @@ export function GmailTreeViewWithText({
         onChange={handleAutocompleteChange}
         inputValue={inputValue}
         onInputChange={handleInputChange} // Properly handle input change
-        renderTags={(value, getTagProps) =>
-          value.map((option, index) => (
-            <Chip
-              label={option.name}
-              {...getTagProps({ index })}
-              onDelete={() => handleDelete(option.id)} // Handle deletion from Autocomplete
-              deleteIcon={<CloseIcon />}
-            />
-          ))
-        }
+        renderTags={(value, getTagProps) => (
+          <Box
+            sx={{
+              maxHeight: 75, // Set maximum height for the Chips container
+              overflowY: "auto", // Enable vertical scrolling
+              width: "100%", // Ensure full width
+            }}
+          >
+            {value.map((option, index) => (
+              <Chip
+                label={option.name}
+                {...getTagProps({ index })}
+                onDelete={() => handleDelete(option.id)}
+                deleteIcon={<CloseIcon />}
+              />
+            ))}
+          </Box>
+        )}
         renderInput={(params) => (
           <TextField
             {...params}
