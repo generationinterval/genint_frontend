@@ -62,23 +62,20 @@ const createColorScale = (
   getColor: (d: DataPoint) => string;
   legendData: { label: string; color: string; extent?: [number, number] }[];
   discreteOrContinuous: string;
-  globalColorOrder: string[];
 } => {
   let getColor: (d: DataPoint) => string;
   let legendData: { label: string; color: string; extent?: [number, number] }[];
   let discreteOrContinuous: string;
-  let globalColorOrder: string[] = [];
 
   if (col === "") {
     const defaultColor = "steelblue";
     getColor = () => defaultColor;
     legendData = [{ label: "Default Color", color: defaultColor }];
     discreteOrContinuous = "default";
-    globalColorOrder = [defaultColor]; // Only one color, steelblue
   }
   // Rule 2: If the variable in col is continuous, create a continuous colormap
   else if (variables.continuousOptionsShort.includes(col)) {
-    let extent = d3.extent(data, (d) => +d[col as keyof DataPoint]!);
+    const extent = d3.extent(data, (d) => +d[col as keyof DataPoint]!);
     const isExtentValid = extent[0] !== undefined && extent[1] !== undefined;
     const colorScale = d3
       .scaleSequential(d3.interpolateTurbo)
@@ -98,7 +95,6 @@ const createColorScale = (
         ]
       : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
     discreteOrContinuous = "continuous";
-    globalColorOrder = []; // Continuous variables don't have a strict "order" per se
   }
   // Rule 3: If the variable in col is discrete, create a categorical colormap
   else {
@@ -127,10 +123,9 @@ const createColorScale = (
       color: colorScale(value),
     }));
     discreteOrContinuous = "discrete";
-    globalColorOrder = uniqueValues; // Set global order for categorical values
   }
 
-  return { getColor, legendData, discreteOrContinuous, globalColorOrder };
+  return { getColor, legendData, discreteOrContinuous };
 };
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -276,8 +271,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .attr("r", baseRadiusInd * scaleFactor);
     }
 
-    const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
-      createColorScale(data, col);
+    const { getColor, legendData, discreteOrContinuous } = createColorScale(
+      data,
+      col
+    );
 
     // Select the SVG overlay for circles
     const svg = d3
@@ -344,17 +341,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .attr("fill-opacity", 0.6);
     }
 
-    const tooltip = d3
-      .select(map.getContainer())
-      .append("div")
-      .attr("class", "tooltip")
-      .style("position", "absolute")
-      .style("background", "white")
-      .style("padding", "5px")
-      .style("border", "1px solid #ccc")
-      .style("border-radius", "3px")
-      .style("pointer-events", "none")
-      .style("opacity", 0);
     svg
       .selectAll(".circe_ind")
       .data(jitteredData)
@@ -551,6 +537,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
     map_pop_rad,
     map_lat_jit,
     map_lon_jit,
+    baseRadiusData,
+    baseRadiusReg,
+    baseRadiusPop,
+    baseRadiusInd,
+    col_unmapped,
+    popColorScale,
   ]);
 
   return (

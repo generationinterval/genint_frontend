@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
 
@@ -73,7 +73,7 @@ const createColorScale = (
   }
   // Rule 2: If the variable in col is continuous, create a continuous colormap
   else if (variables.continuousOptionsShort.includes(col[0])) {
-    let extent = d3.extent(data, (d) => +d[col[0] as keyof DataPoint]!);
+    const extent = d3.extent(data, (d) => +d[col[0] as keyof DataPoint]!);
     const isExtentValid = extent[0] !== undefined && extent[1] !== undefined;
     const colorScale = d3
       .scaleSequential(d3.interpolateViridis)
@@ -143,15 +143,13 @@ const drawHistogram = (
   plotHeight: number,
   plotWidth: number,
   var_x: string,
-  col: string[],
   n_bins: number,
   getColor: (d: DataPoint) => string,
   discreteOrContinuous: string,
   globalColorOrder: string[], // Pass global color order
   showMeanMedian: boolean,
   title: string,
-  x_label: string,
-  y_label: string
+  x_label: string
 ) => {
   // Create histogram bins
   const histogram = d3
@@ -185,7 +183,7 @@ const drawHistogram = (
     if (discreteOrContinuous === "discrete") {
       // Sort by the global color order, not by the current bin
       sortedColorGroups = Array.from(colorGroups).sort(
-        ([colorA, groupDataA], [colorB, groupDataB]) => {
+        ([, groupDataA], [, groupDataB]) => {
           const dataColorA = groupDataA[0].color; // Accessing the color of the first DataPoint
           const dataColorB = groupDataB[0].color;
 
@@ -212,7 +210,7 @@ const drawHistogram = (
       sortedColorGroups = Array.from(colorGroups);
     }
     // Iterate over color groups within each bin
-    sortedColorGroups.forEach(([color, groupData]) => {
+    sortedColorGroups.forEach(([, groupData]) => {
       const proportion = groupData.length / totalPoints;
       const binHeight = proportion * (yScale(0) - yScale(bin.length));
 
@@ -287,7 +285,7 @@ const drawHistogram = (
         .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", "4,4") // Striped pattern for mean
-        .on("mouseenter", (event) => {
+        .on("mouseenter", () => {
           tooltip.transition().duration(200).style("opacity", 1); // Show tooltip
           tooltip.html(
             `<strong>Group:</strong> ${
@@ -315,7 +313,7 @@ const drawHistogram = (
         .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", "2,4")
-        .on("mouseenter", (event) => {
+        .on("mouseenter", () => {
           tooltip.transition().duration(200).style("opacity", 1);
           tooltip.html(
             `<strong>Group:</strong> ${
@@ -381,9 +379,10 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
     max_y_axis,
     var_1_mapped,
     n_bins,
+    col,
   ]);
 
-  const handleResize = () => {
+  const handleResize = useCallback(() => {
     if (containerRef.current && svgRef.current && data) {
       const { width, height } = containerRef.current.getBoundingClientRect();
       svgRef.current.setAttribute("width", String(width));
@@ -403,21 +402,36 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
         max_y_axis
       );
     }
-  };
+  }, [
+    containerRef,
+    svgRef,
+    data,
+    col,
+    var_1_mapped,
+    n_bins,
+    mea_med_1,
+    x_axis,
+    min_x_axis,
+    max_x_axis,
+    y_axis,
+    min_y_axis,
+    max_y_axis,
+  ]);
 
   useEffect(() => {
     window.addEventListener("resize", handleResize);
 
+    // Call handleResize immediately to initialize size
     handleResize();
 
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [data]);
+  }, [data, handleResize]);
 
   useEffect(() => {
     handleResize();
-  }, [isSidebarVisible]);
+  }, [isSidebarVisible, handleResize]);
   return (
     <div
       id="plot-container"
@@ -565,9 +579,9 @@ const fullHistogram = (
     );
 
     // Create legend items dynamically
-    legendData.forEach((d, i) => {
+    legendData.forEach((d) => {
       // Append rectangle for the color box
-      const rect = legend
+      legend
         .append("rect")
         .attr("x", cumulativeWidth)
         .attr("y", 0)
@@ -635,7 +649,6 @@ const fullHistogram = (
           variables.mappingToLong[
             var_x as keyof typeof variables.mappingToLong
           ];
-        const y_label = "Counts";
         drawHistogram(
           facetGroup,
           facetData,
@@ -647,15 +660,13 @@ const fullHistogram = (
           plotHeight,
           plotWidth,
           var_x,
-          col,
           n_bins,
           getColor,
           discreteOrContinuous,
           globalColorOrder, // Pass the global color order here
           showMeanMedian,
           title,
-          x_label,
-          y_label
+          x_label
         );
       });
     });
@@ -697,7 +708,6 @@ const fullHistogram = (
       const title = `${facXValue}`;
       const x_label =
         variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
-      const y_label = "Counts";
       drawHistogram(
         facetGroup,
         facetData,
@@ -709,15 +719,13 @@ const fullHistogram = (
         plotHeight,
         plotWidth,
         var_x,
-        col,
         n_bins,
         getColor,
         discreteOrContinuous,
         globalColorOrder, // Pass the global color order here
         showMeanMedian,
         title,
-        x_label,
-        y_label
+        x_label
       );
     });
   } else if (facetingRequiredY) {
@@ -758,7 +766,6 @@ const fullHistogram = (
       const title = `${facYValue}`;
       const x_label =
         variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
-      const y_label = "Counts";
       drawHistogram(
         facetGroup,
         facetData,
@@ -770,15 +777,13 @@ const fullHistogram = (
         plotHeight,
         plotWidth,
         var_x,
-        col,
         n_bins,
         getColor,
         discreteOrContinuous,
         globalColorOrder, // Pass the global color order here
         showMeanMedian,
         title,
-        x_label,
-        y_label
+        x_label
       );
     });
   } else {
@@ -814,7 +819,6 @@ const fullHistogram = (
     const title = ``;
     const x_label =
       variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
-    const y_label = "Counts";
     drawHistogram(
       facetGroup,
       data,
@@ -826,15 +830,13 @@ const fullHistogram = (
       plotHeight,
       plotWidth,
       var_x,
-      col,
       n_bins,
       getColor,
       discreteOrContinuous,
       globalColorOrder, // Pass the global color order here
       showMeanMedian,
       title,
-      x_label,
-      y_label
+      x_label
     );
   }
 };
