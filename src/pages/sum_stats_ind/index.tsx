@@ -12,7 +12,6 @@ import DownloadIcon from "@mui/icons-material/Download";
 import ImageIcon from "@mui/icons-material/Image";
 import Papa from "papaparse";
 import TocIcon from "@mui/icons-material/Toc";
-import "@/global.css";
 import "@/components/sum_stats_ind/HistogramComponent.css";
 import "@/pages/sum_stats_ind/index.css";
 

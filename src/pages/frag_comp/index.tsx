@@ -3,7 +3,6 @@ import { Grid } from "@mui/material";
 import SideFilter from "@/components/frag_vis_ind/SideFilter";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
-import "@/global.css";
 import {
   ancestries_noAll,
   chrms_all,

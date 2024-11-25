@@ -30,44 +30,31 @@ export const NavBar: React.FC = () => {
         sx={{
           backgroundColor: "primary.main",
           height: "7dvh", // Explicitly set AppBar height to match Box
-          boxSizing: "border-box",
-          minHeight: "70.85px", // Include borders and padding in height calculation
+          minHeight: "70.85px",
         }}
       >
         <Toolbar
-          disableGutters // Removes default left and right padding
           sx={{
-            height: "100%", // Toolbar fills the AppBar height
             display: "flex",
-            alignItems: "center", // Center content vertically
-            justifyContent: "space-between", // Spread out items horizontally
-            padding: 0, // Remove padding
-            margin: 0, // Remove margin
-            boxSizing: "border-box", // Ensure no extra height is added
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: "100%",
           }}
         >
-          <Container
-            maxWidth="xl"
+          <Typography
             sx={{
-              display: "flex",
-              alignItems: "center", // Center children vertically
-              height: "100%", // Ensure the container fills the Toolbar height
-              padding: 0, // Remove any potential padding
+              color: "primary.contrastText",
+              fontWeight: "bold",
+              fontSize: "1.2rem",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              marginRight: "auto", // Push to the right
             }}
           >
-            <Typography
-              sx={{
-                color: "primary.contrastText",
-                fontWeight: "bold",
-                fontSize: "1.2rem",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              Generation Interval
-            </Typography>
-            {/* <Stack
+            Generation Interval
+          </Typography>
+          {/* <Stack
               direction="row"
               spacing={2}
               sx={{
@@ -78,90 +65,103 @@ export const NavBar: React.FC = () => {
                 height: "100%"
               }}
             > */}
-            <Stack
-              direction="row"
-              spacing={0}
+          <Stack
+            direction="row"
+            spacing={0}
+            sx={{
+              position: "absolute",
+              flexGrow: 1,
+              left: "50%",
+              transform: "translateX(-50%)", // Center horizontally
+              alignItems: "center",
+              width: "40dvw",
+              height: "100%",
+            }}
+          >
+            {/*           <Stack
+            direction="row"
+            spacing={0}
+            sx={{
+              flexGrow: 1,
+              justifyContent: "center",
+              alignItems: "center", // Align all items vertically in the center
+              height: "100%",
+              width: "40dvw",
+            }} */}
+
+            <Box
               sx={{
+                display: "flex",
+                alignItems: "center", // Vertically align text
+                justifyContent: "center", // Horizontally align text
+                cursor: "pointer",
                 flexGrow: 1,
-                justifyContent: "center",
-                alignItems: "center", // Align all items vertically in the center
-                height: "100%",
-                width: "40dvw",
+                color: "primary.contrastText",
+                height: "100%", // Ensure full height
+                lineHeight: "normal", // Prevent extra line height padding
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
+                },
               }}
+              onClick={() => handleNavigation(paths.summary_stats.per_ind)}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center", // Vertically align text
-                  justifyContent: "center", // Horizontally align text
-                  cursor: "pointer",
-                  flexGrow: 1,
-                  color: "primary.contrastText",
-                  height: "100%", // Ensure full height
-                  lineHeight: "normal", // Prevent extra line height padding
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
-                  },
-                }}
-                onClick={() => handleNavigation(paths.summary_stats.per_ind)}
-              >
-                Summ Per Ind
-              </Box>
-              <Box
-                sx={{
-                  borderLeft: "1px solid white",
-                  height: "100%", // Ensure full height for the separator
-                  alignSelf: "center", // Vertically center the separator
-                }}
-              />
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  flexGrow: 1,
-                  color: "primary.contrastText",
-                  height: "100%",
-                  lineHeight: "normal",
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  },
-                }}
-                onClick={() => handleNavigation(paths.fragment.vis_per_ind)}
-              >
-                Frag Vis Per Ind
-              </Box>
-              <Box
-                sx={{
-                  borderLeft: "1px solid white",
-                  height: "100%",
-                  alignSelf: "center",
-                }}
-              />
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  flexGrow: 1,
-                  color: "primary.contrastText",
-                  height: "100%",
-                  lineHeight: "normal",
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  },
-                }}
-                onClick={() => handleNavigation(paths.fragment.vis_per_reg)}
-              >
-                Frag Vis Per Reg
-              </Box>
-            </Stack>
+              Summ Per Ind
+            </Box>
+            <Box
+              sx={{
+                borderLeft: "1px solid white",
+                height: "100%", // Ensure full height for the separator
+                alignSelf: "center", // Vertically center the separator
+              }}
+            />
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                flexGrow: 1,
+                color: "primary.contrastText",
+                height: "100%",
+                lineHeight: "normal",
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                },
+              }}
+              onClick={() => handleNavigation(paths.fragment.vis_per_ind)}
+            >
+              Frag Vis Per Ind
+            </Box>
+            <Box
+              sx={{
+                borderLeft: "1px solid white",
+                height: "100%",
+                alignSelf: "center",
+              }}
+            />
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                flexGrow: 1,
+                color: "primary.contrastText",
+                height: "100%",
+                lineHeight: "normal",
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                },
+              }}
+              onClick={() => handleNavigation(paths.fragment.vis_per_reg)}
+            >
+              Frag Vis Per Reg
+            </Box>
+          </Stack>
 
-            {/* Right Partition */}
+          {/* Right Partition */}
 
-            {/*             <Typography
+          {/*             <Typography
               sx={{
                 color: "primary.contrastText",
                 fontSize: "0.9rem",
@@ -172,67 +172,67 @@ export const NavBar: React.FC = () => {
             >
               {isSidebarVisible ? "Collapse Options" : "Expand Options"}
             </Typography> */}
-            <Stack
-              direction="row"
-              spacing={0} // Remove default spacing between items
+          <Stack
+            direction="row"
+            spacing={0} // Remove default spacing between items
+            sx={{
+              position: "absolute",
+              flexGrow: 1,
+              right: "5%",
+              // Center horizontally
+              alignItems: "center",
+              width: "20dvw",
+              height: "100%",
+            }}
+          >
+            <Box
               sx={{
-                flexGrow: 1,
-                justifyContent: "center",
-                alignItems: "right",
-                position: "right",
-                height: "7vh",
-                width: "10vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center", // Center text horizontally
+                cursor: "pointer",
+                flexGrow: 1, // Allow the box to grow equally with others
+                color: "#000000",
+                height: "100%",
+                backgroundColor: "#FFDD57",
+
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
+                },
               }}
+              onClick={() =>
+                handleNavigation(
+                  "https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0"
+                )
+              }
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center", // Center text horizontally
-                  cursor: "pointer",
-                  flexGrow: 1, // Allow the box to grow equally with others
-                  color: "#000000",
-                  height: "100%",
-                  backgroundColor: "#FFDD57",
+              Feedback Document
+            </Box>
 
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
-                  },
-                }}
-                onClick={() =>
-                  handleNavigation(
-                    "https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0"
-                  )
-                }
-              >
-                Feedback Document
-              </Box>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center", // Center text horizontally
+                cursor: "pointer",
+                flexGrow: 1, // Allow the box to grow equally with others
+                color: "#000000",
+                height: "100%",
+                backgroundColor: "#4CAF50",
 
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center", // Center text horizontally
-                  cursor: "pointer",
-                  flexGrow: 1, // Allow the box to grow equally with others
-                  color: "#000000",
-                  height: "100%",
-                  backgroundColor: "#4CAF50",
-
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
-                  },
-                }}
-                onClick={() =>
-                  handleNavigation(
-                    "https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0"
-                  )
-                }
-              >
-                Latest Changes
-              </Box>
-            </Stack>
-          </Container>
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
+                },
+              }}
+              onClick={() =>
+                handleNavigation(
+                  "https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0"
+                )
+              }
+            >
+              Latest Changes
+            </Box>
+          </Stack>
         </Toolbar>
       </AppBar>
     </Box>

@@ -4,7 +4,6 @@ import { ThemeProvider } from "@mui/material/styles";
 import theme from "@/theme";
 
 import "@/responsive.css";
-import "@/global.css";
 
 import "@/layout/layout.css";
 
