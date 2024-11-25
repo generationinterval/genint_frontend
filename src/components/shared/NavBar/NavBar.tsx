@@ -391,8 +391,9 @@ export const NavBar: React.FC = () => {
                 },
               }}
               onClick={() =>
-                handleNavigation(
-                  "https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0"
+                window.open(
+                  "https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0",
+                  "_blank" // Open in a new tab
                 )
               }
             >
@@ -414,8 +415,9 @@ export const NavBar: React.FC = () => {
                 },
               }}
               onClick={() =>
-                handleNavigation(
-                  "https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0"
+                window.open(
+                  "https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0",
+                  "_blank" // Open in a new tab
                 )
               }
             >
