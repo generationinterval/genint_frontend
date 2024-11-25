@@ -2,7 +2,7 @@ import React from "react";
 import { Container, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
-export const AboutPage: React.FC<NonNullable<unknown>> = () => {
+export const SummStatGroup: React.FC<NonNullable<unknown>> = () => {
   const navigate = useNavigate(); // Hook to programmatically navigate
 
   return (
