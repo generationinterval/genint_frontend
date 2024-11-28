@@ -520,10 +520,8 @@ const fullViolin = (
   d3.select(svgElement).selectAll("*").remove();
   const container = svgElement.parentElement;
 
-  const margin = { top: 40, right: 20, bottom: 90, left: 60 };
-  const width = container
-    ? container.clientWidth - margin.right - margin.left
-    : 960;
+  const margin = { top: 25, right: 70, bottom: 120, left: 35 };
+  const width = container ? container.clientWidth : 960;
   const height = container ? container.clientHeight : 600;
   const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
     createColorScale(data, col, var_x);
@@ -543,8 +541,8 @@ const fullViolin = (
 
   const plotWidth =
     numCols === 1
-      ? width - margin.right - margin.left
-      : (width - margin.right - margin.left) / numCols - colPadding;
+      ? width - margin.left - margin.right - colPadding
+      : (width - margin.left - margin.right) / numCols - colPadding;
   // Step 1: Group data by `fac_x`
   const groupedByFacX: { [key: string]: Array<DataPoint> } = data.reduce(
     (acc, point) => {
@@ -574,13 +572,13 @@ const fullViolin = (
     totalUniqueColors += uniqueColorsSet.size;
   }
 
-  const xTickWidth = width / totalUniqueColors - colPadding;
+  const xTickWidth = (width - margin.left - margin.right) / totalUniqueColors;
   const plotHeight = height - margin.bottom - margin.top;
 
   const svg = d3
     .select(svgElement)
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr("width", width)
+    .attr("height", height)
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -689,7 +687,7 @@ const fullViolin = (
 
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${accX},0)
+        `translate(${margin.left + accX},${margin.top})
           `
       );
       accX += plotWidth;

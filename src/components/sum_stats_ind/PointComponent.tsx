@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
-// Import jStat
 import * as jStat from "jstat";
 
 export interface DataPoint {
