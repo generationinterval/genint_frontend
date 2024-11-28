@@ -11,6 +11,7 @@ import {
   axis,
   map_jit_marks,
 } from "@/assets/FilterOptions";
+import { icons } from "@/assets/icons"; // Import your icons
 import {
   Box,
   Button,
@@ -47,24 +48,6 @@ interface FilterState {
   var_2_1_mapped: string;
   var_2_2: string;
   var_2_2_mapped: string;
-  data_2_1: string[];
-  data_2_1_mapped: string[];
-  data_2_2: string[];
-  data_2_2_mapped: string[];
-  reg_2_1: string[];
-  reg_2_1_mapped: string[];
-  reg_2_2: string[];
-  reg_2_2_mapped: string[];
-  mpp_2_1: number;
-  mpp_2_2: number;
-  chrms_2_1: string[];
-  chrms_2_1_mapped: string[];
-  chrms_2_2: string[];
-  chrms_2_2_mapped: string[];
-  ancs_2_1: string[];
-  ancs_2_1_mapped: string[];
-  ancs_2_2: string[];
-  ancs_2_2_mapped: string[];
   col: string[];
   col_mapped: string[];
   fac_x: string[];
@@ -104,8 +87,8 @@ interface SideFilterProps {
 
 type MappingKey = keyof typeof variables.mappingToShort;
 
-const plotOptionsSingle = ["Violin", "Histogram", "Density", "Bar", "Map"];
-const plotOptionsDouble = ["Bar", "2D Density", "Quantiles"];
+const plotOptionsSingle = ["Violin", "Histogram", "Density", "Map"];
+const plotOptionsDouble = ["Points", "2D Density", "Quantiles"];
 
 const SideFilter: React.FC<SideFilterProps> = ({
   tabValue,
@@ -114,6 +97,9 @@ const SideFilter: React.FC<SideFilterProps> = ({
   setFilters,
   applyFilters,
 }) => {
+  const normalizeOptionName = (option: string) =>
+    option.toLowerCase().replace(/\s+/g, "_");
+
   const handleSingleMap =
     (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
       const value = event.target.value;
@@ -346,6 +332,43 @@ const SideFilter: React.FC<SideFilterProps> = ({
           map_lat_jit: 1,
           map_lon_jit: 1,
         };
+      case "Points":
+        return {
+          var_2_1: "Mean Length (bp)",
+          var_2_1_mapped: "len_mea",
+          var_2_2: "Max Length (bp)",
+          var_2_2_mapped: "len_max",
+          data_1: ["DATA", "PDAT"],
+          data_1_mapped: ["DATA", "PDAT"],
+          reg_1: [
+            "East Asia",
+            "Europe",
+            "South Asia",
+            "Oceania",
+            "Central Asia",
+          ],
+          reg_1_mapped: ["EAS", "EUR", "SAS", "OCE", "CAS"],
+          mpp_1: 0.5,
+          chrms_1: ["Autosome"],
+          chrms_1_mapped: ["A"],
+          ancs_1: ["All"],
+          ancs_1_mapped: ["All"],
+          col: ["Region"],
+          col_mapped: ["reg"],
+          fac_x: ["Dataset"],
+          fac_x_mapped: ["dat"],
+          fac_y: [],
+          fac_y_mapped: [],
+          mea_med_x: true,
+          mea_med_y: true,
+          x_axis: "Free Axis",
+          min_x_axis: 0,
+          max_x_axis: 0,
+          y_axis: "Free Axis",
+          min_y_axis: 0,
+          max_y_axis: 0,
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+        };
 
       default:
         return {};
@@ -390,22 +413,61 @@ const SideFilter: React.FC<SideFilterProps> = ({
         </ToggleButtonGroup>
       </Grid>
       <Grid item xs={12}>
-        <FormControl fullWidth>
-          <InputLabel id="plot-type-select-label">Plot Type</InputLabel>
-          <Select
-            labelId="plot-type-select-label"
-            id="plot-type-select"
-            value={filters.plot} // Bind to the plot state
-            label="Plot Types"
-            onChange={handlePlotType} // Updated handler
-          >
-            {options.map((option, index) => (
-              <MenuItem key={index} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <ToggleButtonGroup
+          value={filters.plot}
+          exclusive
+          onChange={(event, newPlot) => {
+            if (newPlot !== null) {
+              const defaultValues = getDefaultValuesForPlot(newPlot);
+              setFilters((prevFilters) => ({
+                ...prevFilters,
+                plot: newPlot,
+                ...defaultValues,
+              }));
+            }
+          }}
+          aria-label="plot type"
+          fullWidth
+          sx={{
+            "& .MuiToggleButtonGroup-grouped": {
+              height: "56px",
+              color: "#003d73", // Default text and SVG color
+              "&.Mui-selected": {
+                backgroundColor: "primary.main",
+                color: "white", // Change text and SVG color
+              },
+            },
+          }}
+        >
+          {options.map((option, index) => (
+            <ToggleButton
+              key={index}
+              value={option}
+              aria-label={option}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#003d73", // Default color
+                "&.Mui-selected": {
+                  color: "white", // Selected color
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  marginRight: 1,
+                }}
+              >
+                {icons.get(normalizeOptionName(option)) || null}{" "}
+                {/* Fetch the appropriate SVG */}
+              </Box>
+              {option}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
       </Grid>
       <>
         <Grid item xs={12}>
@@ -471,7 +533,12 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     label="Plot Types"
                     onChange={handleSingleMap("var_2_1")}
                   >
-                    {variables.options_all.map((option, index) => (
+                    {(filters.plot === "Points"
+                      ? variables.continuousOptions
+                      : filters.plot === "placeholder"
+                      ? variables.discreteOptions
+                      : variables.options_all
+                    ).map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
                       </MenuItem>
@@ -510,7 +577,12 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     label="Plot Types"
                     onChange={handleSingleMap("var_2_2")}
                   >
-                    {variables.options_all.map((option, index) => (
+                    {(filters.plot === "Points"
+                      ? variables.continuousOptions
+                      : filters.plot === "placeholder"
+                      ? variables.discreteOptions
+                      : variables.options_all
+                    ).map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
                       </MenuItem>
@@ -619,6 +691,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   selectedValues={filters.col}
                   onChange={handleColor}
                 />
+
                 <MultipleSelectChip
                   sx={{ mb: 1, mt: 1 }}
                   options={variables.discreteOptions}
@@ -626,13 +699,15 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   selectedValues={filters.fac_x}
                   onChange={handleMultiMap("fac_x")}
                 />
-                <MultipleSelectChip
-                  sx={{ mb: 1, mt: 1 }}
-                  options={variables.discreteOptions}
-                  label="Facet in Y"
-                  selectedValues={filters.fac_y}
-                  onChange={handleMultiMap("fac_y")}
-                />
+                {filters.plot !== "Violin" && (
+                  <MultipleSelectChip
+                    sx={{ mb: 1, mt: 1 }}
+                    options={variables.discreteOptions}
+                    label="Facet in Y"
+                    selectedValues={filters.fac_y}
+                    onChange={handleMultiMap("fac_y")}
+                  />
+                )}
                 {filters.plot !== "Violin" && (
                   <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
                     <InputLabel id="x_axis_options">X Axis Options</InputLabel>
@@ -689,7 +764,11 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     label="Y Axis Options"
                     onChange={handleSingleNoMap("y_axis")} // Updated handler
                   >
-                    {axis.options.map((option, index) => (
+                    {/* Dynamically determine the options */}
+                    {(filters.plot === "Violin"
+                      ? ["Free Axis", "Shared Axis", "Define Range"]
+                      : ["Free Axis", "Shared Axis", "Define Range"]
+                    ).map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
                       </MenuItem>

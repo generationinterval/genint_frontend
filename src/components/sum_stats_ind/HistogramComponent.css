@@ -9,9 +9,9 @@
     border: 1px solid black; /* Added border style */
 }
   
-  #histogram {
+#histogram {
     display: block;
     width: 100%;
     height: 100%;
-  }
+}
   

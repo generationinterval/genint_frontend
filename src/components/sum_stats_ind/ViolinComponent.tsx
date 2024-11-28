@@ -99,7 +99,10 @@ const createColorScale = (
     };
     // Step 5: Generate legend data
     legendData = globalColorOrder.map((value) => ({
-      label: String(value),
+      label:
+        variables.mappingToLong[
+          value as keyof typeof variables.mappingToLong
+        ] || String(value),
       color: colorScale(value),
     }));
     discreteOrContinuous = "discrete";
@@ -186,7 +189,7 @@ const drawViolin = (
     .scaleLinear()
     .range([0, xScale.bandwidth()])
     .domain([-maxNum, maxNum]);
-  const container = d3.select("#violin-container"); // Assuming you have a div with this id
+  const container = d3.select("#plot-container"); // Assuming you have a div with this id
   const tooltip = container.append("div").attr("class", "tooltip");
 
   // Draw violin shapes
@@ -290,7 +293,7 @@ const drawViolin = (
         titleText
           .append("tspan")
           .attr("x", plotWidth / 2)
-          .attr("y", -20 + i * 5) // Adjust line height (15 can be replaced with your preference)
+          .attr("y", -25 + i * 5) // Adjust line height (15 can be replaced with your preference)
           .attr("dy", `${i * 1.1}em`)
           .text(line);
       });
@@ -493,7 +496,7 @@ const ViolinComponent: React.FC<ViolinPlotProps> = ({
   }, [isSidebarVisible]);
   return (
     <div
-      id="violin-container"
+      id="plot-container"
       ref={containerRef}
       style={{ width: "100%", height: "100%", position: "relative" }}
     >
@@ -515,15 +518,13 @@ const fullViolin = (
 ) => {
   // Clear any existing content in the SVG
   d3.select(svgElement).selectAll("*").remove();
-
   const container = svgElement.parentElement;
-  const margin = { top: 30, right: 30, bottom: 40, left: 70 };
+
+  const margin = { top: 40, right: 20, bottom: 90, left: 60 };
   const width = container
-    ? container.clientWidth - margin.left - margin.right
+    ? container.clientWidth - margin.right - margin.left
     : 960;
-  const height = container
-    ? container.clientHeight - margin.top - margin.bottom
-    : 600;
+  const height = container ? container.clientHeight : 600;
   const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
     createColorScale(data, col, var_x);
 
@@ -531,25 +532,19 @@ const fullViolin = (
   const uniqueFacX = [...new Set(data.map((d) => d.fac_x))].filter(
     (val) => val !== null
   );
-  const uniqueFacY = [...new Set(data.map((d) => d.fac_y))].filter(
-    (val) => val !== null
-  );
 
   // Determine if faceting is needed
   const facetingRequiredX = uniqueFacX.length > 1;
-  const facetingRequiredY = uniqueFacY.length > 1;
 
   // Determine number of rows and columns in the grid based on faceting
   const numCols = facetingRequiredX ? uniqueFacX.length : 1;
-  const numRows = facetingRequiredY ? uniqueFacY.length : 1;
 
   const colPadding = 0;
-  const rowPadding = 70;
 
   const plotWidth =
     numCols === 1
       ? width - margin.right - margin.left
-      : width / numCols - colPadding;
+      : (width - margin.right - margin.left) / numCols - colPadding;
   // Step 1: Group data by `fac_x`
   const groupedByFacX: { [key: string]: Array<DataPoint> } = data.reduce(
     (acc, point) => {
@@ -580,10 +575,7 @@ const fullViolin = (
   }
 
   const xTickWidth = width / totalUniqueColors - colPadding;
-  const plotHeight =
-    numRows === 1
-      ? height - margin.bottom - margin.top
-      : height / numRows - rowPadding;
+  const plotHeight = height - margin.bottom - margin.top;
 
   const svg = d3
     .select(svgElement)
@@ -599,37 +591,41 @@ const fullViolin = (
     .domain(globalColorOrder)
     .padding(0.05);
 
-  const itemWidth = 100; // Adjust based on your layout
+  const padding = 30;
+  let cumulativeWidth = 0;
   const legend = svg.append("g").attr(
     "transform",
-    `translate(${(width - legendData.length * itemWidth) / 2}, ${height - 20})` // Center horizontally and place at the bottom
+    `translate(${margin.left}, ${height - 80})` // Start legend at the leftmost point of the container
   );
 
-  // Create rectangles for each discrete item
-  legend
-    .selectAll("rect")
-    .data(legendData)
-    .enter()
-    .append("rect")
-    .attr("x", (d, i) => i * itemWidth) // Horizontal positioning
-    .attr("y", 0) // Align all items vertically
-    .attr("width", 18)
-    .attr("height", 18)
-    .style("fill", (d) => d.color);
+  // Create legend items dynamically
+  legendData.forEach((d) => {
+    // Append rectangle for the color box
+    legend
+      .append("rect")
+      .attr("x", cumulativeWidth)
+      .attr("y", 0)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", d.color);
 
-  // Add the legend labels (text)
-  legend
-    .selectAll("text")
-    .data(legendData)
-    .enter()
-    .append("text")
-    .attr("x", (d, i) => i * itemWidth + 24) // Position text next to the rectangle
-    .attr("y", 9) // Center the text vertically with the rectangle
-    .attr("dy", ".35em")
-    .text((d) => d.label);
+    // Append text label
+    const text = legend
+      .append("text")
+      .attr("x", cumulativeWidth + 24) // Position text next to the rectangle
+      .attr("y", 9) // Center text vertically with the rectangle
+      .attr("dy", ".35em")
+      .text(d.label);
+
+    const textNode = text.node();
+    if (textNode) {
+      const textWidth = textNode.getBBox().width;
+      cumulativeWidth += 18 + textWidth + padding; // Update cumulative width with rectangle, text, and padding
+    }
+  });
   const x_title = svg.append("g").attr(
     "transform",
-    `translate(${width / 2}, ${height - 35})` // Center horizontally and place at the bottom
+    `translate(${width / 2}, ${height - 90})` // Center horizontally and place at the bottom
   );
   const x_label = col
     .map(
@@ -644,93 +640,7 @@ const fullViolin = (
     .attr("text-anchor", "middle")
     .text(x_label);
 
-  if (facetingRequiredX && facetingRequiredY) {
-    // Apply faceting on both fac_x and fac_y
-    uniqueFacX.forEach((facXValue, i) => {
-      uniqueFacY.forEach((facYValue, j) => {
-        const facetData = data.filter(
-          (d) => d.fac_x === facXValue && d.fac_y === facYValue
-        );
-        const xAxRange = Array.from(new Set(data.map((d) => d.color)));
-        const reorderedXAxRange = globalColorOrder.filter((color) =>
-          xAxRange.includes(color)
-        );
-        const plotWidth = reorderedXAxRange.length * xTickWidth - colPadding;
-        const xScale = d3
-          .scaleBand()
-          .range([0, plotWidth])
-          .domain(reorderedXAxRange)
-          .padding(0.05);
-
-        if (y_axis === "Define Range") {
-          yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
-        } else if (y_axis === "Shared Axis") {
-          const minVal = d3.min(
-            data,
-            (d) => d[var_x as keyof DataPoint] as number
-          )!;
-          const maxVal = d3.max(
-            data,
-            (d) => d[var_x as keyof DataPoint] as number
-          )!;
-          const buffer = (maxVal - minVal) * 0.05;
-          yScale
-            .domain([minVal - buffer, maxVal + buffer])
-            .range([plotHeight, 0]);
-        } else if (y_axis === "Free Axis") {
-          const minVal = d3.min(
-            facetData,
-            (d) => d[var_x as keyof DataPoint] as number
-          )!;
-          const maxVal = d3.max(
-            facetData,
-            (d) => d[var_x as keyof DataPoint] as number
-          )!;
-          const buffer = (maxVal - minVal) * 0.05;
-          yScale
-            .domain([minVal - buffer, maxVal + buffer])
-            .range([plotHeight, 0]);
-        }
-        const facetGroup = svg
-          .append("g")
-          .attr(
-            "transform",
-            `translate(${i * plotWidth + i * colPadding},${
-              j * plotHeight + j * rowPadding
-            })`
-          );
-        const title = `${facXValue} / ${facYValue}`;
-        const y_label =
-          variables.mappingToLong[
-            var_x as keyof typeof variables.mappingToLong
-          ];
-
-        const showYAxis = i === 0;
-        drawViolin(
-          facetGroup,
-          facetData,
-          xScale,
-          yScale,
-          y_axis,
-          min_y_axis,
-          max_y_axis,
-          plotHeight,
-          plotWidth,
-          var_x,
-          col,
-          getColor,
-          discreteOrContinuous,
-          globalColorOrder,
-          showMeanMedian,
-          title,
-          x_label,
-          y_label,
-          0.5,
-          showYAxis
-        );
-      });
-    });
-  } else if (facetingRequiredX) {
+  if (facetingRequiredX) {
     // Apply faceting on fac_x only
     let accX = 0;
     uniqueFacX.forEach((facXValue, i) => {
@@ -785,6 +695,7 @@ const fullViolin = (
       accX += plotWidth;
 
       const title = `${facXValue.replace(/_/g, "\n")}`;
+      console.log(title);
       const y_label =
         variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
       const x_label = col
@@ -819,80 +730,6 @@ const fullViolin = (
         showYaxis
       );
     });
-  } else if (facetingRequiredY) {
-    // Apply faceting on fac_y only
-    uniqueFacY.forEach((facYValue, j) => {
-      const facetData = data.filter((d) => d.fac_y === facYValue);
-
-      if (y_axis === "Define Range") {
-        yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
-      } else if (y_axis === "Shared Axis") {
-        const minVal = d3.min(
-          data,
-          (d) => d[var_x as keyof DataPoint] as number
-        )!;
-        const maxVal = d3.max(
-          data,
-          (d) => d[var_x as keyof DataPoint] as number
-        )!;
-        const buffer = (maxVal - minVal) * 0.05;
-        yScale
-          .domain([minVal - buffer, maxVal + buffer])
-          .range([plotHeight, 0]);
-      } else if (y_axis === "Free Axis") {
-        const minVal = d3.min(
-          facetData,
-          (d) => d[var_x as keyof DataPoint] as number
-        )!;
-        const maxVal = d3.max(
-          facetData,
-          (d) => d[var_x as keyof DataPoint] as number
-        )!;
-        const buffer = (maxVal - minVal) * 0.05;
-        yScale
-          .domain([minVal - buffer, maxVal + buffer])
-          .range([plotHeight, 0]);
-      }
-      const facetGroup = svg.append("g").attr(
-        "transform",
-        `translate(0, ${j * plotHeight + j * rowPadding})
-          `
-      );
-      const title = `${facYValue}`;
-      const y_label =
-        variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
-      const x_label = col
-        .map(
-          (value) =>
-            variables.mappingToLong[
-              value as keyof typeof variables.mappingToLong
-            ]
-        )
-        .join("-");
-
-      drawViolin(
-        facetGroup,
-        facetData,
-        xScale,
-        yScale,
-        y_axis,
-        min_y_axis,
-        max_y_axis,
-        plotHeight,
-        plotWidth,
-        var_x,
-        col,
-        getColor,
-        discreteOrContinuous,
-        globalColorOrder,
-        showMeanMedian,
-        title,
-        x_label,
-        y_label,
-        0.5,
-        true
-      );
-    });
   } else {
     if (y_axis === "Define Range") {
       yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
@@ -919,6 +756,7 @@ const fullViolin = (
       const buffer = (maxVal - minVal) * 0.05;
       yScale.domain([minVal - buffer, maxVal + buffer]).range([plotHeight, 0]);
     }
+    const plotWidth = width;
     const facetGroup = svg.append("g").attr(
       "transform",
       `translate(0, 0)

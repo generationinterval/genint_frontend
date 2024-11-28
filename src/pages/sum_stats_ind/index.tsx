@@ -4,6 +4,7 @@ import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
 import SideFilter from "@/components/sum_stats_ind/SideFilter";
 import HistogramComponent from "@/components/sum_stats_ind/HistogramComponent";
 import ViolinComponent from "@/components/sum_stats_ind/ViolinComponent";
+import PointComponent from "@/components/sum_stats_ind/PointComponent";
 import MapComponent from "@/components/sum_stats_ind/MapComponent";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import { saveAs } from "file-saver";
@@ -30,24 +31,6 @@ interface FilterState {
   var_2_1_mapped: string;
   var_2_2: string;
   var_2_2_mapped: string;
-  data_2_1: string[];
-  data_2_1_mapped: string[];
-  data_2_2: string[];
-  data_2_2_mapped: string[];
-  reg_2_1: string[];
-  reg_2_1_mapped: string[];
-  reg_2_2: string[];
-  reg_2_2_mapped: string[];
-  mpp_2_1: number;
-  mpp_2_2: number;
-  chrms_2_1: string[];
-  chrms_2_1_mapped: string[];
-  chrms_2_2: string[];
-  chrms_2_2_mapped: string[];
-  ancs_2_1: string[];
-  ancs_2_1_mapped: string[];
-  ancs_2_2: string[];
-  ancs_2_2_mapped: string[];
   col: string[];
   col_mapped: string[];
   fac_x: string[];
@@ -129,24 +112,6 @@ export const SummStatInd: React.FC = () => {
     var_2_1_mapped: "",
     var_2_2: "",
     var_2_2_mapped: "",
-    data_2_1: [],
-    data_2_1_mapped: [],
-    data_2_2: [],
-    data_2_2_mapped: [],
-    reg_2_1: [],
-    reg_2_1_mapped: [],
-    reg_2_2: [],
-    reg_2_2_mapped: [],
-    mpp_2_1: 0.5,
-    mpp_2_2: 0.5,
-    chrms_2_1: [],
-    chrms_2_1_mapped: [],
-    chrms_2_2: [],
-    chrms_2_2_mapped: [],
-    ancs_2_1: [],
-    ancs_2_1_mapped: [],
-    ancs_2_2: [],
-    ancs_2_2_mapped: [],
     col: [],
     col_mapped: [],
     fac_x: [],
@@ -411,6 +376,22 @@ export const SummStatInd: React.FC = () => {
                 col={filters.col_mapped}
                 isSidebarVisible={isSidebarVisible}
                 mea_med_1={filters.mea_med_1}
+                y_axis={filters.y_axis}
+                min_y_axis={filters.min_y_axis}
+                max_y_axis={filters.max_y_axis}
+              />
+            ) : filters.plot === "Points" ? (
+              <PointComponent
+                data={data}
+                var_x_mapped={filters.var_2_1_mapped}
+                var_y_mapped={filters.var_2_2_mapped}
+                col={filters.col_mapped}
+                isSidebarVisible={isSidebarVisible}
+                mea_med_x={filters.mea_med_x}
+                mea_med_y={filters.mea_med_y}
+                x_axis={filters.x_axis}
+                min_x_axis={filters.min_x_axis}
+                max_x_axis={filters.max_x_axis}
                 y_axis={filters.y_axis}
                 min_y_axis={filters.min_y_axis}
                 max_y_axis={filters.max_y_axis}

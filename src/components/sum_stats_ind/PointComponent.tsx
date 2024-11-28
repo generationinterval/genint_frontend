@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
+// Import jStat
+import * as jStat from "jstat";
 
 export interface DataPoint {
   ind: string;
@@ -35,13 +37,14 @@ export interface DataPoint {
   color: string;
 }
 
-type HistogramPlotProps = {
+type PointPlotProps = {
   data: any[];
-  var_1_mapped: string;
+  var_x_mapped: string;
+  var_y_mapped: string;
   col: string[];
-  n_bins: number;
   isSidebarVisible: boolean;
-  mea_med_1: boolean;
+  mea_med_x: boolean;
+  mea_med_y: boolean;
   x_axis: string;
   min_x_axis: number;
   max_x_axis: number;
@@ -132,7 +135,7 @@ const createColorScale = (
   return { getColor, legendData, discreteOrContinuous, globalColorOrder };
 };
 
-const drawHistogram = (
+const drawPoints = (
   facetGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
   data: DataPoint[],
   xScale: d3.ScaleLinear<number, number>,
@@ -143,94 +146,56 @@ const drawHistogram = (
   plotHeight: number,
   plotWidth: number,
   var_x: string,
-  n_bins: number,
+  var_y: string,
   getColor: (d: DataPoint) => string,
   discreteOrContinuous: string,
   globalColorOrder: string[], // Pass global color order
-  showMeanMedian: boolean,
+  showMeanMedian_x: boolean,
+  showMeanMedian_y: boolean,
   title: string,
-  x_label: string
+  x_label: string,
+  y_label: string
 ) => {
-  // Create histogram bins
-  const histogram = d3
-    .bin<DataPoint, number>()
-    .value((d) => d[var_x as keyof DataPoint] as number)!
-    .domain(xScale.domain() as [number, number])
-    .thresholds(n_bins);
+  // Adjust scales based on data
+  xScale
+    .domain(
+      d3.extent(data, (d) => d[var_x as keyof DataPoint] as number) as [
+        number,
+        number
+      ]
+    )
+    .range([0, plotWidth])
+    .nice();
 
-  const bins = histogram(data);
   if (y_axis === "Define Range") {
     yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
   } else if (y_axis === "Shared Axis") {
     throw new Error("Shared Axis is not supported for y-axis.");
   } else if (y_axis === "Free Axis") {
     yScale
-      .domain([
-        0,
-        d3.max(bins, (d) => d.length)! + 0.05 * d3.max(bins, (d) => d.length)!,
-      ])
-      .range([plotHeight, 0]);
+      .domain(
+        d3.extent(data, (d) => d[var_y as keyof DataPoint] as number) as [
+          number,
+          number
+        ]
+      )
+      .range([plotHeight, 0])
+      .nice();
   }
 
-  // Draw the histogram bars
-  bins.forEach((bin) => {
-    const colorGroups = d3.group(bin, (d: DataPoint) => getColor(d));
-    const totalPoints = bin.length;
-    let accumulatedHeight = 0;
+  // Draw scatter plot points
+  facetGroup
+    .selectAll("circle")
+    .data(data)
+    .enter()
+    .append("circle")
+    .attr("cx", (d) => xScale(d[var_x as keyof DataPoint] as number))
+    .attr("cy", (d) => yScale(d[var_y as keyof DataPoint] as number))
+    .attr("r", 3)
+    .attr("fill", (d) => getColor(d))
+    .attr("stroke", "none");
 
-    let sortedColorGroups: [string, DataPoint[]][] = [];
-
-    if (discreteOrContinuous === "discrete") {
-      // Sort by the global color order, not by the current bin
-      sortedColorGroups = Array.from(colorGroups).sort(
-        ([, groupDataA], [, groupDataB]) => {
-          const dataColorA = groupDataA[0].color; // Accessing the color of the first DataPoint
-          const dataColorB = groupDataB[0].color;
-
-          const indexA = globalColorOrder.indexOf(dataColorA);
-          const indexB = globalColorOrder.indexOf(dataColorB);
-
-          return (
-            (indexA === -1 ? Infinity : indexA) -
-            (indexB === -1 ? Infinity : indexB)
-          );
-        }
-      );
-    } else if (discreteOrContinuous === "continuous") {
-      // Sort by the continuous values (increasing order)
-      sortedColorGroups = Array.from(colorGroups).sort(
-        ([colorA], [colorB]) => +colorA - +colorB // Assuming color is a numerical continuous value
-      );
-    } else {
-      // No color column provided, using a single default color for all groups
-      const defaultColor = "steelblue"; // Default color if no specific color column
-      getColor = () => defaultColor;
-
-      // Sort by default with a single group
-      sortedColorGroups = Array.from(colorGroups);
-    }
-    // Iterate over color groups within each bin
-    sortedColorGroups.forEach(([, groupData]) => {
-      const proportion = groupData.length / totalPoints;
-      const binHeight = proportion * (yScale(0) - yScale(bin.length));
-
-      facetGroup
-        .append("rect")
-        .attr("x", 1)
-        .attr(
-          "transform",
-          `translate(${xScale(bin.x0!)}, ${
-            yScale(bin.length) + accumulatedHeight
-          })`
-        )
-        .attr("width", xScale(bin.x1!) - xScale(bin.x0!) - 1)
-        .attr("height", binHeight)
-        .attr("fill", getColor(groupData[0]))
-        .attr("stroke", "none");
-
-      accumulatedHeight += binHeight;
-    });
-  });
+  // Add X Axis to the facet
   facetGroup
     .append("g")
     .attr("transform", `translate(0,${plotHeight})`)
@@ -248,10 +213,11 @@ const drawHistogram = (
     .append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -plotHeight / 2) // Center the Y axis title along the axis
-    .attr("y", -30) // Adjust this to position the label to the left of the axis
+    .attr("y", -70) // Adjust this to position the label to the left of the axis
     .attr("text-anchor", "middle")
-    .text("Counts");
+    .text(y_label);
 
+  // Add title to the facet
   facetGroup
     .append("text")
     .attr("x", plotWidth / 2)
@@ -259,8 +225,8 @@ const drawHistogram = (
     .attr("text-anchor", "middle")
     .text(`${title}`);
 
-  // Draw mean and median lines if showMeanMedian is true
-  if (showMeanMedian) {
+  // Draw mean and median lines if showMeanMedian_x or showMeanMedian_y is true
+  if (showMeanMedian_x || showMeanMedian_y) {
     // Group data by color
     const colorGroups = d3.group(data, (d) => getColor(d));
 
@@ -268,79 +234,248 @@ const drawHistogram = (
       const container = d3.select("#plot-container"); // Assuming you have a div with this id
       const tooltip = container.append("div").attr("class", "tooltip");
 
-      const mean = d3.mean(
-        groupData,
-        (d) => d[var_x as keyof DataPoint] as number
-      )!;
-      const median = d3.median(
-        groupData,
-        (d) => d[var_x as keyof DataPoint] as number
-      )!;
-      facetGroup
-        .append("line")
-        .attr("x1", xScale(mean))
-        .attr("x2", xScale(mean))
-        .attr("y1", yScale.range()[0])
-        .attr("y2", yScale.range()[1])
-        .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", "4,4") // Striped pattern for mean
-        .on("mouseenter", () => {
-          tooltip.transition().duration(200).style("opacity", 1); // Show tooltip
-          tooltip.html(
-            `<strong>Group:</strong> ${
-              groupData[0].color
-            }<br/><strong>Mean:</strong> ${mean.toFixed(2)}`
-          );
-        })
-        .on("mousemove", (event) => {
-          const [mouseX, mouseY] = d3.pointer(event, container.node()); // Ensure the mouse position is relative to the container
-          tooltip
-            .style("left", `${mouseX + 10}px`)
-            .style("top", `${mouseY - 28}px`);
-        })
-        .on("mouseleave", () => {
-          tooltip.transition().duration(200).style("opacity", 0); // Hide tooltip
-        });
+      // Calculate mean and median for x and y
+      if (showMeanMedian_x) {
+        const mean_x = d3.mean(
+          groupData,
+          (d) => d[var_x as keyof DataPoint] as number
+        )!;
+        const median_x = d3.median(
+          groupData,
+          (d) => d[var_x as keyof DataPoint] as number
+        )!;
 
-      // Draw median line
-      facetGroup
-        .append("line")
-        .attr("x1", xScale(median))
-        .attr("x2", xScale(median))
-        .attr("y1", yScale.range()[0])
-        .attr("y2", yScale.range()[1])
-        .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", "2,4")
-        .on("mouseenter", () => {
-          tooltip.transition().duration(200).style("opacity", 1);
-          tooltip.html(
-            `<strong>Group:</strong> ${
-              groupData[0].color
-            }<br/><strong>Median:</strong> ${median.toFixed(2)}`
-          );
-        })
-        .on("mousemove", (event) => {
-          const [mouseX, mouseY] = d3.pointer(event, container.node());
-          tooltip
-            .style("left", `${mouseX + 10}px`)
-            .style("top", `${mouseY - 28}px`);
-        })
-        .on("mouseleave", () => {
-          tooltip.transition().duration(200).style("opacity", 0);
-        });
+        // Draw mean line for x (vertical line)
+        facetGroup
+          .append("line")
+          .attr("x1", xScale(mean_x))
+          .attr("x2", xScale(mean_x))
+          .attr("y1", yScale.range()[0])
+          .attr("y2", yScale.range()[1])
+          .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", "4,4")
+          .on("mouseenter", () => {
+            tooltip.transition().duration(200).style("opacity", 1); // Show tooltip
+            tooltip.html(
+              `<strong>Group:</strong> ${
+                groupData[0].color
+              }<br/><strong>Mean X:</strong> ${mean_x.toFixed(2)}`
+            );
+          })
+          .on("mousemove", (event) => {
+            const [mouseX, mouseY] = d3.pointer(event, container.node()); // Ensure the mouse position is relative to the container
+            tooltip
+              .style("left", `${mouseX + 10}px`)
+              .style("top", `${mouseY - 28}px`);
+          })
+          .on("mouseleave", () => {
+            tooltip.transition().duration(200).style("opacity", 0); // Hide tooltip
+          });
+
+        // Draw median line for x (vertical line)
+        facetGroup
+          .append("line")
+          .attr("x1", xScale(median_x))
+          .attr("x2", xScale(median_x))
+          .attr("y1", yScale.range()[0])
+          .attr("y2", yScale.range()[1])
+          .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", "2,4")
+          .on("mouseenter", () => {
+            tooltip.transition().duration(200).style("opacity", 1);
+            tooltip.html(
+              `<strong>Group:</strong> ${
+                groupData[0].color
+              }<br/><strong>Median X:</strong> ${median_x.toFixed(2)}`
+            );
+          })
+          .on("mousemove", (event) => {
+            const [mouseX, mouseY] = d3.pointer(event, container.node());
+            tooltip
+              .style("left", `${mouseX + 10}px`)
+              .style("top", `${mouseY - 28}px`);
+          })
+          .on("mouseleave", () => {
+            tooltip.transition().duration(200).style("opacity", 0);
+          });
+      }
+
+      if (showMeanMedian_y) {
+        const mean_y = d3.mean(
+          groupData,
+          (d) => d[var_y as keyof DataPoint] as number
+        )!;
+        const median_y = d3.median(
+          groupData,
+          (d) => d[var_y as keyof DataPoint] as number
+        )!;
+
+        // Draw mean line for y (horizontal line)
+        facetGroup
+          .append("line")
+          .attr("x1", xScale.range()[0])
+          .attr("x2", xScale.range()[1])
+          .attr("y1", yScale(mean_y))
+          .attr("y2", yScale(mean_y))
+          .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", "4,4")
+          .on("mouseenter", () => {
+            tooltip.transition().duration(200).style("opacity", 1); // Show tooltip
+            tooltip.html(
+              `<strong>Group:</strong> ${
+                groupData[0].color
+              }<br/><strong>Mean Y:</strong> ${mean_y.toFixed(2)}`
+            );
+          })
+          .on("mousemove", (event) => {
+            const [mouseX, mouseY] = d3.pointer(event, container.node());
+            tooltip
+              .style("left", `${mouseX + 10}px`)
+              .style("top", `${mouseY - 28}px`);
+          })
+          .on("mouseleave", () => {
+            tooltip.transition().duration(200).style("opacity", 0);
+          });
+
+        // Draw median line for y (horizontal line)
+        facetGroup
+          .append("line")
+          .attr("x1", xScale.range()[0])
+          .attr("x2", xScale.range()[1])
+          .attr("y1", yScale(median_y))
+          .attr("y2", yScale(median_y))
+          .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", "2,4")
+          .on("mouseenter", () => {
+            tooltip.transition().duration(200).style("opacity", 1);
+            tooltip.html(
+              `<strong>Group:</strong> ${
+                groupData[0].color
+              }<br/><strong>Median Y:</strong> ${median_y.toFixed(2)}`
+            );
+          })
+          .on("mousemove", (event) => {
+            const [mouseX, mouseY] = d3.pointer(event, container.node());
+            tooltip
+              .style("left", `${mouseX + 10}px`)
+              .style("top", `${mouseY - 28}px`);
+          })
+          .on("mouseleave", () => {
+            tooltip.transition().duration(200).style("opacity", 0);
+          });
+      }
     });
   }
+
+  // Draw linear trendlines with 95% confidence intervals
+  // Group data by color
+  const colorGroups = d3.group(data, (d) => getColor(d));
+
+  colorGroups.forEach((groupData, color) => {
+    // Prepare data
+    const n = groupData.length;
+    const xValues = groupData.map((d) => d[var_x as keyof DataPoint] as number);
+    const yValues = groupData.map((d) => d[var_y as keyof DataPoint] as number);
+
+    const sumX = d3.sum(xValues);
+    const sumY = d3.sum(yValues);
+    const sumXY = d3.sum(
+      groupData,
+      (d) =>
+        (d[var_x as keyof DataPoint] as number) *
+        (d[var_y as keyof DataPoint] as number)
+    );
+    const sumX2 = d3.sum(xValues, (x) => x * x);
+
+    const meanX = sumX / n;
+    const meanY = sumY / n;
+
+    const ssXX = sumX2 - n * meanX * meanX;
+    const ssXY = sumXY - n * meanX * meanY;
+
+    const slope = ssXY / ssXX;
+    const intercept = meanY - slope * meanX;
+
+    // Residuals
+    const residuals = groupData.map((d) => {
+      const x = d[var_x as keyof DataPoint] as number;
+      const y = d[var_y as keyof DataPoint] as number;
+      const yPredicted = slope * x + intercept;
+      return y - yPredicted;
+    });
+
+    const residualSumOfSquares = d3.sum(residuals, (r) => r * r);
+    const sSquared = residualSumOfSquares / (n - 2);
+    const s = Math.sqrt(sSquared);
+
+    const ssXX_total = d3.sum(xValues, (x) => (x - meanX) ** 2);
+
+    // t-value for 95% confidence interval
+    const alpha = 0.05;
+    const degreesOfFreedom = n - 2;
+    const tValue = jStat.studentt.inv(1 - alpha / 2, degreesOfFreedom);
+
+    // Generate x values for plotting the regression line and confidence intervals
+    const xMin = d3.min(xValues)!;
+    const xMax = d3.max(xValues)!;
+    const xRange = d3.range(xMin, xMax, (xMax - xMin) / 100);
+
+    const regressionData = xRange.map((x) => {
+      const yPredicted = slope * x + intercept;
+      const se = s * Math.sqrt(1 / n + (x - meanX) ** 2 / ssXX_total);
+      const ci = tValue * se;
+
+      return {
+        x,
+        yPredicted,
+        CI_upper: yPredicted + ci,
+        CI_lower: yPredicted - ci,
+      };
+    });
+
+    // Create line and area generators
+    const lineGenerator = d3
+      .line<{ x: number; yPredicted: number }>()
+      .x((d) => xScale(d.x))
+      .y((d) => yScale(d.yPredicted));
+
+    const areaGenerator = d3
+      .area<{ x: number; CI_upper: number; CI_lower: number }>()
+      .x((d) => xScale(d.x))
+      .y0((d) => yScale(d.CI_lower))
+      .y1((d) => yScale(d.CI_upper));
+
+    // Plot the confidence interval area
+    facetGroup
+      .append("path")
+      .datum(regressionData)
+      .attr("fill", color)
+      .attr("opacity", 0.2)
+      .attr("d", areaGenerator);
+
+    // Plot the regression line
+    facetGroup
+      .append("path")
+      .datum(regressionData)
+      .attr("stroke", d3.color(color)!.darker(0.7).formatHex())
+      .attr("stroke-width", 2)
+      .attr("fill", "none")
+      .attr("d", lineGenerator);
+  });
 };
 
-const HistogramComponent: React.FC<HistogramPlotProps> = ({
+const PointComponent: React.FC<PointPlotProps> = ({
   data,
-  var_1_mapped,
+  var_x_mapped,
+  var_y_mapped,
   col,
-  n_bins,
   isSidebarVisible,
-  mea_med_1,
+  mea_med_x,
+  mea_med_y,
   x_axis,
   min_x_axis,
   max_x_axis,
@@ -353,13 +488,14 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
 
   useEffect(() => {
     if (svgRef.current && Array.isArray(data) && data.length > 0) {
-      fullHistogram(
+      fullPoints(
         svgRef.current,
         data,
         col,
-        var_1_mapped,
-        n_bins,
-        mea_med_1,
+        var_x_mapped,
+        var_y_mapped,
+        mea_med_x,
+        mea_med_y,
         x_axis,
         min_x_axis,
         max_x_axis,
@@ -370,16 +506,17 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
     }
   }, [
     data,
-    mea_med_1,
+    col,
+    var_x_mapped,
+    var_y_mapped,
+    mea_med_x,
+    mea_med_y,
     x_axis,
     min_x_axis,
     max_x_axis,
     y_axis,
     min_y_axis,
     max_y_axis,
-    var_1_mapped,
-    n_bins,
-    col,
   ]);
 
   const handleResize = useCallback(() => {
@@ -387,13 +524,14 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
       const { width, height } = containerRef.current.getBoundingClientRect();
       svgRef.current.setAttribute("width", String(width));
       svgRef.current.setAttribute("height", String(height));
-      fullHistogram(
-        svgRef.current!,
+      fullPoints(
+        svgRef.current,
         data,
         col,
-        var_1_mapped,
-        n_bins,
-        mea_med_1,
+        var_x_mapped,
+        var_y_mapped,
+        mea_med_x,
+        mea_med_y,
         x_axis,
         min_x_axis,
         max_x_axis,
@@ -403,13 +541,12 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
       );
     }
   }, [
-    containerRef,
-    svgRef,
     data,
     col,
-    var_1_mapped,
-    n_bins,
-    mea_med_1,
+    var_x_mapped,
+    var_y_mapped,
+    mea_med_x,
+    mea_med_y,
     x_axis,
     min_x_axis,
     max_x_axis,
@@ -438,19 +575,20 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
       ref={containerRef}
       style={{ width: "100%", height: "100%", position: "relative" }}
     >
-      <svg id="histogram" ref={svgRef} />
+      <svg id="point" ref={svgRef} />
     </div>
   );
 };
-export default HistogramComponent;
+export default PointComponent;
 
-const fullHistogram = (
+const fullPoints = (
   svgElement: SVGSVGElement,
   data: DataPoint[],
   col: string[],
   var_x: string,
-  n_bins: number,
-  showMeanMedian: boolean,
+  var_y: string,
+  showMeanMedianX: boolean,
+  showMeanMedianY: boolean,
   x_axis: string,
   min_x_axis: number,
   max_x_axis: number,
@@ -461,7 +599,7 @@ const fullHistogram = (
   d3.select(svgElement).selectAll("*").remove();
 
   const container = svgElement.parentElement;
-  const margin = { top: 20, right: 0, bottom: 25, left: 50 };
+  const margin = { top: 10, right: 0, bottom: 50, left: 40 };
   const width = container ? container.clientWidth : 960;
   const height = container ? container.clientHeight : 600;
   const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
@@ -482,22 +620,22 @@ const fullHistogram = (
   const numCols = facetingRequiredX ? uniqueFacX.length : 1;
   const numRows = facetingRequiredY ? uniqueFacY.length : 1;
 
-  const colPadding = 60;
+  const colPadding = 90;
   const rowPadding = 70;
 
   const plotWidth =
     numCols === 1
-      ? width - margin.right - margin.left
-      : (width - margin.right - margin.left) / numCols - colPadding;
+      ? width - margin.left - margin.right - colPadding
+      : (width - margin.left - margin.right) / numCols - colPadding;
   const plotHeight =
     numRows === 1
-      ? height - margin.bottom - margin.top
-      : (height - margin.bottom - margin.top) / numRows - rowPadding;
+      ? height - margin.top - margin.bottom - rowPadding
+      : (height - margin.top - margin.bottom) / numRows - rowPadding;
 
   const svg = d3
     .select(svgElement)
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr("width", width)
+    .attr("height", height)
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -640,8 +778,8 @@ const fullHistogram = (
           .append("g")
           .attr(
             "transform",
-            `translate(${i * plotWidth + i * colPadding},${
-              j * plotHeight + j * rowPadding
+            `translate(${margin.left + (i * plotWidth + i * colPadding)},${
+              margin.top + (j * plotHeight + j * rowPadding)
             })`
           );
         const title = `${facXValue} / ${facYValue}`;
@@ -649,7 +787,11 @@ const fullHistogram = (
           variables.mappingToLong[
             var_x as keyof typeof variables.mappingToLong
           ];
-        drawHistogram(
+        const y_label =
+          variables.mappingToLong[
+            var_y as keyof typeof variables.mappingToLong
+          ];
+        drawPoints(
           facetGroup,
           facetData,
           xScale,
@@ -660,13 +802,15 @@ const fullHistogram = (
           plotHeight,
           plotWidth,
           var_x,
-          n_bins,
+          var_y,
           getColor,
           discreteOrContinuous,
           globalColorOrder, // Pass the global color order here
-          showMeanMedian,
+          showMeanMedianX,
+          showMeanMedianY,
           title,
-          x_label
+          x_label,
+          y_label
         );
       });
     });
@@ -701,14 +845,18 @@ const fullHistogram = (
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${i * plotWidth + i * colPadding},0)
+        `translate(${margin.left + (i * plotWidth + i * colPadding)},${
+          margin.top
+        })
           `
       );
 
       const title = `${facXValue}`;
       const x_label =
         variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
-      drawHistogram(
+      const y_label =
+        variables.mappingToLong[var_y as keyof typeof variables.mappingToLong];
+      drawPoints(
         facetGroup,
         facetData,
         xScale,
@@ -719,13 +867,15 @@ const fullHistogram = (
         plotHeight,
         plotWidth,
         var_x,
-        n_bins,
+        var_y,
         getColor,
         discreteOrContinuous,
         globalColorOrder, // Pass the global color order here
-        showMeanMedian,
+        showMeanMedianX,
+        showMeanMedianY,
         title,
-        x_label
+        x_label,
+        y_label
       );
     });
   } else if (facetingRequiredY) {
@@ -759,14 +909,19 @@ const fullHistogram = (
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(0, ${j * plotHeight + j * rowPadding})
+        `translate(${margin.left}, ${
+          margin.top + (j * plotHeight + j * rowPadding)
+        })
+
           `
       );
 
       const title = `${facYValue}`;
       const x_label =
         variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
-      drawHistogram(
+      const y_label =
+        variables.mappingToLong[var_y as keyof typeof variables.mappingToLong];
+      drawPoints(
         facetGroup,
         facetData,
         xScale,
@@ -777,13 +932,15 @@ const fullHistogram = (
         plotHeight,
         plotWidth,
         var_x,
-        n_bins,
+        var_y,
         getColor,
         discreteOrContinuous,
         globalColorOrder, // Pass the global color order here
-        showMeanMedian,
+        showMeanMedianX,
+        showMeanMedianY,
         title,
-        x_label
+        x_label,
+        y_label
       );
     });
   } else {
@@ -813,13 +970,15 @@ const fullHistogram = (
     // Append a group for each facet
     const facetGroup = svg.append("g").attr(
       "transform",
-      `translate(0, 0)
+      `translate(${margin.left}, ${margin.top})
         `
     );
     const title = ``;
     const x_label =
       variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
-    drawHistogram(
+    const y_label =
+      variables.mappingToLong[var_y as keyof typeof variables.mappingToLong];
+    drawPoints(
       facetGroup,
       data,
       xScale,
@@ -830,13 +989,15 @@ const fullHistogram = (
       plotHeight,
       plotWidth,
       var_x,
-      n_bins,
+      var_y,
       getColor,
       discreteOrContinuous,
       globalColorOrder, // Pass the global color order here
-      showMeanMedian,
+      showMeanMedianX,
+      showMeanMedianY,
       title,
-      x_label
+      x_label,
+      y_label
     );
   }
 };
