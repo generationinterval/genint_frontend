@@ -182,7 +182,6 @@ const drawViolin = (
       value: kde(value.map((g) => g[var_x as keyof DataPoint] as number)),
     })
   );
-  console.log(data);
   const maxNum = d3.max(sumstat, (d) => d3.max(d.value, (v) => v[1])) || 0;
 
   const xNum = d3
@@ -520,7 +519,7 @@ const fullViolin = (
   d3.select(svgElement).selectAll("*").remove();
   const container = svgElement.parentElement;
 
-  const margin = { top: 25, right: 70, bottom: 120, left: 35 };
+  const margin = { top: 25, right: 0, bottom: 120, left: 40 };
   const width = container ? container.clientWidth : 960;
   const height = container ? container.clientHeight : 600;
   const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
@@ -583,6 +582,7 @@ const fullViolin = (
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
   const yScale = d3.scaleLinear().range([plotHeight, 0]);
+  console.log("height", height);
   const xScale = d3
     .scaleBand()
     .range([0, plotWidth])
@@ -647,7 +647,7 @@ const fullViolin = (
       const reorderedXAxRange = globalColorOrder.filter((color) =>
         xAxRange.includes(color)
       );
-      console.log(reorderedXAxRange);
+
       const plotWidth = reorderedXAxRange.length * xTickWidth - colPadding;
       const xScale = d3
         .scaleBand()
@@ -693,7 +693,7 @@ const fullViolin = (
       accX += plotWidth;
 
       const title = `${facXValue.replace(/_/g, "\n")}`;
-      console.log(title);
+
       const y_label =
         variables.mappingToLong[var_x as keyof typeof variables.mappingToLong];
       const x_label = col

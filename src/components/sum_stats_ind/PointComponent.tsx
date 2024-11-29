@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback } from "react";
 import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
 import * as jStat from "jstat";
+import { c } from "vite/dist/node/types.d-aGj9QkWt";
 
 export interface DataPoint {
   ind: string;
@@ -598,9 +599,10 @@ const fullPoints = (
   d3.select(svgElement).selectAll("*").remove();
 
   const container = svgElement.parentElement;
-  const margin = { top: 10, right: 0, bottom: 50, left: 40 };
+  const margin = { top: 40, right: 90, bottom: 120, left: 80 };
   const width = container ? container.clientWidth : 960;
   const height = container ? container.clientHeight : 600;
+
   const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
     createColorScale(data, col);
   // Extract unique values for faceting directly from the data
@@ -624,19 +626,21 @@ const fullPoints = (
 
   const plotWidth =
     numCols === 1
-      ? width - margin.left - margin.right - colPadding
+      ? width - margin.left - margin.right
       : (width - margin.left - margin.right) / numCols - colPadding;
+
   const plotHeight =
     numRows === 1
-      ? height - margin.top - margin.bottom - rowPadding
+      ? height - margin.top - margin.bottom
       : (height - margin.top - margin.bottom) / numRows - rowPadding;
+  console.log("height", height);
 
   const svg = d3
     .select(svgElement)
     .attr("width", width)
     .attr("height", height)
     .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
+    .attr("transform", `translate(0,0)`);
 
   const xScale = d3.scaleLinear().range([0, plotWidth]);
 

@@ -31,6 +31,7 @@ import { SelectChangeEvent } from "@mui/material/Select";
 import { checkboxBoxStyles } from "@/assets/styles";
 import { TextField } from "@mui/material";
 import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
+import "./SideFilter.css";
 
 interface FilterState {
   var_1: string;
@@ -376,7 +377,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
   };
 
   return (
-    <Grid container spacing={2}>
+    <Grid className="side-filter" container spacing={2}>
       <Grid item xs={12}>
         <Typography variant="h5">1- Select Type of Plot:</Typography>
       </Grid>
@@ -427,10 +428,11 @@ const SideFilter: React.FC<SideFilterProps> = ({
             }
           }}
           aria-label="plot type"
+          orientation="vertical"
           fullWidth
           sx={{
             "& .MuiToggleButtonGroup-grouped": {
-              height: "56px",
+              height: "40px",
               color: "#003d73", // Default text and SVG color
               "&.Mui-selected": {
                 backgroundColor: "primary.main",

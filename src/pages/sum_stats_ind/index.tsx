@@ -300,16 +300,20 @@ export const SummStatInd: React.FC = () => {
     // Add more columns as needed
   ];
   return (
-    <Grid container spacing={2} style={{ height: "100vh", overflow: "hidden" }}>
+    <Grid
+      container
+      spacing={2}
+      style={{ height: "100dvh", overflow: "hidden" }}
+    >
       {isSidebarVisible && (
         <Grid
           item
           xs={12}
           sm={4}
           md={3}
-          lg={3}
+          lg={2}
           style={{
-            height: "90vh",
+            height: "100%",
             padding: "10px",
             display: "flex",
             flexDirection: "column",
@@ -331,7 +335,7 @@ export const SummStatInd: React.FC = () => {
         xs={12}
         sm={isSidebarVisible ? 8 : 12}
         md={isSidebarVisible ? 9 : 12}
-        lg={isSidebarVisible ? 9 : 12}
+        lg={isSidebarVisible ? 10 : 12}
         style={{
           height: "100%",
           padding: "10px",
