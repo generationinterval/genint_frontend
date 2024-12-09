@@ -14,7 +14,7 @@ import ImageIcon from "@mui/icons-material/Image";
 import Papa from "papaparse";
 import TocIcon from "@mui/icons-material/Toc";
 import "@/components/sum_stats_ind/HistogramComponent.css";
-
+import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 interface FilterState {
   var_1: string;
   var_1_mapped: string;
@@ -60,38 +60,6 @@ interface FilterState {
   tree_lin: string[];
 }
 
-interface DataPoint {
-  ind: string;
-  dat: string;
-  chrom: string;
-  anc: string;
-  hap: number;
-  len_mea: number;
-  len_med: number;
-  len_max: number;
-  len_min: number;
-  nfr: number;
-  seq: number;
-  sex: string;
-  pop: string;
-  reg: string;
-  oda: string;
-  tim: number;
-  lat: number;
-  lon: number;
-  cre: string;
-  cda: string;
-  lin: string;
-  ancAMR: number;
-  ancEAS: number;
-  ancSAS: number;
-  ancAFR: number;
-  ancEUR: number;
-  ancOCE: number;
-  fac_x: string | null; // Assuming fac_x and fac_y might be null
-  fac_y: string | null;
-  color: string;
-}
 export const SummStatInd: React.FC = () => {
   const [viewTabValue, setViewTabValue] = useState(0);
   const [tabValue, setTabValue] = useState(0);
@@ -470,7 +438,7 @@ export const SummStatInd: React.FC = () => {
               columns={columns}
               pagination
               autoPageSize // Automatically calculate the number of rows based on the container's height
-              getRowId={(row) => row.lin}
+              getRowId={(row) => `${row.lin}_${row.hap}`}
 
               // Ensure correct row identification
             />
