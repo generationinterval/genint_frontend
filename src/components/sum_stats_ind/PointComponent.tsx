@@ -2,40 +2,7 @@ import React, { useRef, useEffect, useCallback } from "react";
 import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
 import * as jStat from "jstat";
-import { c } from "vite/dist/node/types.d-aGj9QkWt";
-
-export interface DataPoint {
-  ind: string;
-  dat: string;
-  chrom: string;
-  anc: string;
-  hap: number;
-  len_mea: number;
-  len_med: number;
-  len_max: number;
-  len_min: number;
-  nfr: number;
-  seq: number;
-  sex: string;
-  pop: string;
-  reg: string;
-  oda: string;
-  tim: number;
-  lat: number;
-  lon: number;
-  cre: string;
-  cda: string;
-  lin: string;
-  ancAMR: number;
-  ancEAS: number;
-  ancSAS: number;
-  ancAFR: number;
-  ancEUR: number;
-  ancOCE: number;
-  fac_x: string | null;
-  fac_y: string | null;
-  color: string;
-}
+import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 
 type PointPlotProps = {
   data: any[];
@@ -596,6 +563,50 @@ const fullPoints = (
   min_y_axis: number,
   max_y_axis: number
 ) => {
+  const ancFields = [
+    "ancAMR",
+    "ancEAS",
+    "ancSAS",
+    "ancAFR",
+    "ancEUR",
+    "ancOCE",
+  ];
+
+  let filteredData = data;
+  const varIsAncX = var_x && ancFields.includes(var_x);
+  const varIsAncY = var_y && ancFields.includes(var_y); // Check var_y as well
+  const colHasAnc = col.some((c) => ancFields.includes(c));
+
+  if (varIsAncX || varIsAncY || colHasAnc) {
+    filteredData = data.filter((d) => {
+      let keep = true;
+
+      // If var_x is an ancestry field, ensure it's not null
+      if (varIsAncX && d[var_x as keyof DataPoint] === null) {
+        keep = false;
+      }
+
+      // If var_y is an ancestry field, ensure it's not null
+      if (varIsAncY && d[var_y as keyof DataPoint] === null) {
+        keep = false;
+      }
+
+      // If any column in col is an ancestry field, ensure none are null
+      if (colHasAnc) {
+        for (const c of col) {
+          if (ancFields.includes(c) && d[c as keyof DataPoint] === null) {
+            keep = false;
+            break;
+          }
+        }
+      }
+
+      return keep;
+    });
+  }
+
+  // Proceed with filteredData instead of data
+  data = filteredData;
   d3.select(svgElement).selectAll("*").remove();
 
   const container = svgElement.parentElement;

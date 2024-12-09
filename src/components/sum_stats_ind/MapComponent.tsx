@@ -4,44 +4,15 @@ import * as d3 from "d3";
 import "leaflet/dist/leaflet.css";
 import { variables } from "@/assets/FilterOptions";
 import { data_cmaps, reg_cmaps } from "@/assets/colormaps";
+import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 
-interface DataPoint {
-  ind: string;
-  dat: string;
-  chrom: string;
-  anc: string;
-  hap: number;
-  len_mea: number;
-  len_med: number;
-  len_max: number;
-  len_min: number;
-  nfr: number;
-  seq: number;
-  sex: string;
-  pop: string;
-  reg: string;
-  oda: string;
-  tim: number;
-  lat: number;
-  lon: number;
-  cre: string;
-  cda: string;
-  lin: string;
-  ancAMR: number;
-  ancEAS: number;
-  ancSAS: number;
-  ancAFR: number;
-  ancEUR: number;
-  ancOCE: number;
-  fac_x: string | null; // Assuming fac_x and fac_y might be null
-  fac_y: string | null;
-  color: string;
-  jitteredLat?: number; // Optional fields to store jittered positions
+interface JitteredDataPoint extends DataPoint {
+  jitteredLat?: number;
   jitteredLon?: number;
 }
 
 interface MapComponentProps {
-  data: DataPoint[];
+  data: JitteredDataPoint[];
   col: string;
   col_unmapped: string;
   map_data: boolean;
@@ -56,14 +27,14 @@ interface MapComponentProps {
 }
 
 const createColorScale = (
-  data: DataPoint[],
+  data: JitteredDataPoint[],
   col: string
 ): {
-  getColor: (d: DataPoint) => string;
+  getColor: (d: JitteredDataPoint) => string;
   legendData: { label: string; color: string; extent?: [number, number] }[];
   discreteOrContinuous: string;
 } => {
-  let getColor: (d: DataPoint) => string;
+  let getColor: (d: JitteredDataPoint) => string;
   let legendData: { label: string; color: string; extent?: [number, number] }[];
   let discreteOrContinuous: string;
 
@@ -75,14 +46,14 @@ const createColorScale = (
   }
   // Rule 2: If the variable in col is continuous, create a continuous colormap
   else if (variables.continuousOptionsShort.includes(col)) {
-    const extent = d3.extent(data, (d) => +d[col as keyof DataPoint]!);
+    const extent = d3.extent(data, (d) => +d[col as keyof JitteredDataPoint]!);
     const isExtentValid = extent[0] !== undefined && extent[1] !== undefined;
     const colorScale = d3
       .scaleSequential(d3.interpolateTurbo)
       .domain(extent as [number, number]);
 
     getColor = (d) => {
-      const value = d[col as keyof DataPoint];
+      const value = d[col as keyof JitteredDataPoint];
       return value !== null && value !== undefined
         ? colorScale(+value)
         : "steelblue"; // Fallback color if value is undefined
@@ -142,6 +113,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
   map_lat_jit,
   map_lon_jit,
 }) => {
+  const ancFields = [
+    "ancAMR",
+    "ancEAS",
+    "ancSAS",
+    "ancAFR",
+    "ancEUR",
+    "ancOCE",
+  ];
+
+  let filteredData = data;
+  const colIsAnc = ancFields.includes(col);
+
+  if (colIsAnc) {
+    filteredData = data.filter((d) => d[col as keyof DataPoint] !== null);
+  }
+
+  // Proceed with filteredData instead of data
+  data = filteredData;
   const mapRef = useRef<HTMLDivElement | null>(null);
   const dataColorScale = (dat: string) => {
     return data_cmaps[dat as keyof typeof data_cmaps] || "#CCCCCC";

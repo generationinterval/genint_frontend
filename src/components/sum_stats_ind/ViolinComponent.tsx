@@ -1,39 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
-
-export interface DataPoint {
-  ind: string;
-  dat: string;
-  chrom: string;
-  anc: string;
-  hap: number;
-  len_mea: number;
-  len_med: number;
-  len_max: number;
-  len_min: number;
-  nfr: number;
-  seq: number;
-  sex: string;
-  pop: string;
-  reg: string;
-  oda: string;
-  tim: number;
-  lat: number;
-  lon: number;
-  cre: string;
-  cda: string;
-  lin: string;
-  ancAMR: number;
-  ancEAS: number;
-  ancSAS: number;
-  ancAFR: number;
-  ancEUR: number;
-  ancOCE: number;
-  fac_x: string | null;
-  fac_y: string | null;
-  color: string;
-}
+import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 
 type ViolinPlotProps = {
   data: any[];
@@ -277,6 +245,13 @@ const drawViolin = (
       .attr("y", -50)
       .attr("text-anchor", "middle")
       .text(y_label);
+    facetGroup
+      .append("line")
+      .attr("x1", 0)
+      .attr("x2", 0)
+      .attr("y1", -30)
+      .attr("y2", plotHeight)
+      .attr("stroke", "black");
   }
 
   facetGroup
@@ -515,11 +490,49 @@ const fullViolin = (
   min_y_axis: number,
   max_y_axis: number
 ) => {
+  const ancFields = [
+    "ancAMR",
+    "ancEAS",
+    "ancSAS",
+    "ancAFR",
+    "ancEUR",
+    "ancOCE",
+  ];
+
+  let filteredData = data;
+  const varIsAnc = ancFields.includes(var_x);
+  const colHasAnc = col.some((c) => ancFields.includes(c));
+
+  if (varIsAnc || colHasAnc) {
+    filteredData = data.filter((d) => {
+      let keep = true;
+
+      // If var_x is an ancestry field, ensure it's not null
+      if (varIsAnc && d[var_x as keyof DataPoint] === null) {
+        keep = false;
+      }
+
+      // If any column in col is an ancestry field, ensure none are null
+      if (colHasAnc) {
+        for (const c of col) {
+          if (ancFields.includes(c) && d[c as keyof DataPoint] === null) {
+            keep = false;
+            break;
+          }
+        }
+      }
+
+      return keep;
+    });
+  }
+
+  // Proceed with filteredData instead of data
+  data = filteredData;
   // Clear any existing content in the SVG
   d3.select(svgElement).selectAll("*").remove();
   const container = svgElement.parentElement;
 
-  const margin = { top: 25, right: 0, bottom: 120, left: 40 };
+  const margin = { top: 50, right: 30, bottom: 80, left: 75 };
   const width = container ? container.clientWidth : 960;
   const height = container ? container.clientHeight : 600;
   const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
@@ -536,12 +549,10 @@ const fullViolin = (
   // Determine number of rows and columns in the grid based on faceting
   const numCols = facetingRequiredX ? uniqueFacX.length : 1;
 
-  const colPadding = 0;
-
   const plotWidth =
     numCols === 1
-      ? width - margin.left - margin.right - colPadding
-      : (width - margin.left - margin.right) / numCols - colPadding;
+      ? width - margin.left - margin.right
+      : (width - margin.left - margin.right) / numCols;
   // Step 1: Group data by `fac_x`
   const groupedByFacX: { [key: string]: Array<DataPoint> } = data.reduce(
     (acc, point) => {
@@ -579,10 +590,9 @@ const fullViolin = (
     .attr("width", width)
     .attr("height", height)
     .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
+    .attr("transform", `translate(0,0)`);
 
   const yScale = d3.scaleLinear().range([plotHeight, 0]);
-  console.log("height", height);
   const xScale = d3
     .scaleBand()
     .range([0, plotWidth])
@@ -593,7 +603,7 @@ const fullViolin = (
   let cumulativeWidth = 0;
   const legend = svg.append("g").attr(
     "transform",
-    `translate(${margin.left}, ${height - 80})` // Start legend at the leftmost point of the container
+    `translate(${margin.left}, ${height - margin.bottom / 1.5})` // Start legend at the leftmost point of the container
   );
 
   // Create legend items dynamically
@@ -623,7 +633,7 @@ const fullViolin = (
   });
   const x_title = svg.append("g").attr(
     "transform",
-    `translate(${width / 2}, ${height - 90})` // Center horizontally and place at the bottom
+    `translate(${width / 2}, ${height - margin.bottom / 1.5})` // Center horizontally and place at the bottom
   );
   const x_label = col
     .map(
@@ -634,13 +644,14 @@ const fullViolin = (
   x_title
     .append("text")
     .attr("x", 0)
-    .attr("y", 0) // Adjust this to move the label below the axis
+    .attr("y", 9) // Adjust this to move the label below the axis
     .attr("text-anchor", "middle")
+    .attr("dy", ".35em")
     .text(x_label);
 
   if (facetingRequiredX) {
     // Apply faceting on fac_x only
-    let accX = 0;
+    let accX = margin.left;
     uniqueFacX.forEach((facXValue, i) => {
       const facetData = data.filter((d) => d.fac_x === facXValue);
       const xAxRange = Array.from(new Set(facetData.map((d) => d.color)));
@@ -648,7 +659,7 @@ const fullViolin = (
         xAxRange.includes(color)
       );
 
-      const plotWidth = reorderedXAxRange.length * xTickWidth - colPadding;
+      const plotWidth = reorderedXAxRange.length * xTickWidth;
       const xScale = d3
         .scaleBand()
         .range([0, plotWidth])
@@ -687,7 +698,7 @@ const fullViolin = (
 
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${margin.left + accX},${margin.top})
+        `translate(${accX},${margin.top})
           `
       );
       accX += plotWidth;
@@ -754,10 +765,10 @@ const fullViolin = (
       const buffer = (maxVal - minVal) * 0.05;
       yScale.domain([minVal - buffer, maxVal + buffer]).range([plotHeight, 0]);
     }
-    const plotWidth = width;
+
     const facetGroup = svg.append("g").attr(
       "transform",
-      `translate(0, 0)
+      `translate(${margin.left},${margin.top})
         `
     );
     const title = ``;
