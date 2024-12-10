@@ -610,7 +610,7 @@ const fullPoints = (
   d3.select(svgElement).selectAll("*").remove();
 
   const container = svgElement.parentElement;
-  const margin = { top: 40, right: 90, bottom: 120, left: 80 };
+  const margin = { top: 0, right: 0, bottom: 60, left: 50 };
   const width = container ? container.clientWidth : 960;
   const height = container ? container.clientHeight : 600;
 
@@ -637,14 +637,12 @@ const fullPoints = (
 
   const plotWidth =
     numCols === 1
-      ? width - margin.left - margin.right
-      : (width - margin.left - margin.right) / numCols - colPadding;
-
+      ? width - margin.right - margin.left - colPadding
+      : (width - margin.right - margin.left) / numCols - colPadding;
   const plotHeight =
     numRows === 1
-      ? height - margin.top - margin.bottom
-      : (height - margin.top - margin.bottom) / numRows - rowPadding;
-  console.log("height", height);
+      ? height - margin.bottom - margin.top - rowPadding
+      : (height - margin.bottom - margin.top) / numRows - rowPadding;
 
   const svg = d3
     .select(svgElement)
@@ -662,7 +660,7 @@ const fullPoints = (
     const legendHeight = 20; // Height of the gradient
     const legend = svg.append("g").attr(
       "transform",
-      `translate(${width / 2 - legendWidth / 2}, ${height - 70})` // Center horizontally and place at the bottom
+      `translate(${margin.left + colPadding / 2}, ${height - rowPadding / 1.5})` // Center horizontally and place at the bottom
     );
     const extent = legendData[0].extent;
 
@@ -727,7 +725,7 @@ const fullPoints = (
     let cumulativeWidth = 0;
     const legend = svg.append("g").attr(
       "transform",
-      `translate(${margin.left}, ${height - 70})` // Start legend at the leftmost point of the container
+      `translate(${margin.left + colPadding / 2}, ${height - rowPadding / 1.5})` // Start legend at the leftmost point of the container
     );
 
     // Create legend items dynamically
@@ -792,8 +790,16 @@ const fullPoints = (
           .append("g")
           .attr(
             "transform",
-            `translate(${margin.left + (i * plotWidth + i * colPadding)},${
-              margin.top + (j * plotHeight + j * rowPadding)
+            `translate(${
+              margin.left +
+              (i * plotWidth +
+                i * (colPadding / 2) +
+                (i + 1) * (colPadding / 2))
+            },${
+              margin.top +
+              j * plotHeight +
+              j * (rowPadding / 2) +
+              (j + 1) * (rowPadding / 2)
             })`
           );
         const title = `${facXValue} / ${facYValue}`;
@@ -832,7 +838,7 @@ const fullPoints = (
     // Apply faceting on fac_x only
     uniqueFacX.forEach((facXValue, i) => {
       const facetData = data.filter((d) => d.fac_x === facXValue);
-
+      const j = 0;
       if (x_axis === "Define Range") {
         xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
       } else if (x_axis === "Shared Axis") {
@@ -859,8 +865,14 @@ const fullPoints = (
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${margin.left + (i * plotWidth + i * colPadding)},${
-          margin.top
+        `translate(${
+          margin.left +
+          (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+        },${
+          margin.top +
+          j * plotHeight +
+          j * (rowPadding / 2) +
+          (j + 1) * (rowPadding / 2)
         })
           `
       );
@@ -896,7 +908,7 @@ const fullPoints = (
     // Apply faceting on fac_y only
     uniqueFacY.forEach((facYValue, j) => {
       const facetData = data.filter((d) => d.fac_y === facYValue);
-
+      const i = 0;
       if (x_axis === "Define Range") {
         xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
       } else if (x_axis === "Shared Axis") {
@@ -923,10 +935,15 @@ const fullPoints = (
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${margin.left}, ${
-          margin.top + (j * plotHeight + j * rowPadding)
+        `translate(${
+          margin.left +
+          (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+        },${
+          margin.top +
+          j * plotHeight +
+          j * (rowPadding / 2) +
+          (j + 1) * (rowPadding / 2)
         })
-
           `
       );
 
@@ -958,6 +975,8 @@ const fullPoints = (
       );
     });
   } else {
+    const i = 0;
+    const j = 0;
     if (x_axis === "Define Range") {
       xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
     } else if (x_axis === "Shared Axis") {
@@ -984,8 +1003,16 @@ const fullPoints = (
     // Append a group for each facet
     const facetGroup = svg.append("g").attr(
       "transform",
-      `translate(${margin.left}, ${margin.top})
-        `
+      `translate(${
+        margin.left +
+        (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+      },${
+        margin.top +
+        j * plotHeight +
+        j * (rowPadding / 2) +
+        (j + 1) * (rowPadding / 2)
+      })
+          `
     );
     const title = ``;
     const x_label =
