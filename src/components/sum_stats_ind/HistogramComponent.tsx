@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useCallback } from "react";
-import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
+import * as d3 from "d3";
+import React, { useCallback, useEffect, useRef } from "react";
 
 type HistogramPlotProps = {
-  data: any[];
+  data: DataPoint[];
   var_1_mapped: string;
   col: string[];
   n_bins: number;
@@ -56,9 +56,9 @@ const createColorScale = (
 
     legendData = isExtentValid
       ? [
-          { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
-          { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
-        ]
+        { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
+        { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
+      ]
       : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
     discreteOrContinuous = "continuous";
     globalColorOrder = []; // Continuous variables don't have a strict "order" per se
@@ -88,7 +88,7 @@ const createColorScale = (
     legendData = uniqueValues.map((value) => ({
       label:
         variables.mappingToLong[
-          value as keyof typeof variables.mappingToLong
+        value as keyof typeof variables.mappingToLong
         ] || String(value),
       color: colorScale(value),
     }));
@@ -186,8 +186,7 @@ const drawHistogram = (
         .attr("x", 1)
         .attr(
           "transform",
-          `translate(${xScale(bin.x0!)}, ${
-            yScale(bin.length) + accumulatedHeight
+          `translate(${xScale(bin.x0!)}, ${yScale(bin.length) + accumulatedHeight
           })`
         )
         .attr("width", xScale(bin.x1!) - xScale(bin.x0!) - 1)
@@ -255,8 +254,7 @@ const drawHistogram = (
         .on("mouseenter", () => {
           tooltip.transition().duration(200).style("opacity", 1); // Show tooltip
           tooltip.html(
-            `<strong>Group:</strong> ${
-              groupData[0].color
+            `<strong>Group:</strong> ${groupData[0].color
             }<br/><strong>Mean:</strong> ${mean.toFixed(2)}`
           );
         })
@@ -283,8 +281,7 @@ const drawHistogram = (
         .on("mouseenter", () => {
           tooltip.transition().duration(200).style("opacity", 1);
           tooltip.html(
-            `<strong>Group:</strong> ${
-              groupData[0].color
+            `<strong>Group:</strong> ${groupData[0].color
             }<br/><strong>Median:</strong> ${median.toFixed(2)}`
           );
         })
@@ -750,9 +747,16 @@ const fullHistogram = (
     });
   }
 
-  function getGlobalCategoryOrder(data: any[], var_x: string | number) {
+  function getGlobalCategoryOrder(data: DataPoint[], var_x: keyof DataPoint) {
     // Extract all unique categories from the full dataset
-    const categories = Array.from(new Set(data.map((d) => d[var_x])));
+    const categories = Array.from(
+      new Set(
+        data
+          .map((d) => d[var_x])
+          .filter((value): value is string => value !== null && value !== undefined)
+          .map(String)  // Convert all values to strings
+      )
+    );
 
     // Sort them alphabetically or in any desired custom order
     categories.sort();
@@ -762,7 +766,7 @@ const fullHistogram = (
   let globalCategoryOrder: string[] = [];
 
   if (variables.discreteOptionsShort.includes(var_x)) {
-    globalCategoryOrder = getGlobalCategoryOrder(data, var_x);
+    globalCategoryOrder = getGlobalCategoryOrder(data, var_x as keyof DataPoint);
   }
   if (facetingRequiredX && facetingRequiredY) {
     // Apply faceting on both fac_x and fac_y
@@ -776,22 +780,20 @@ const fullHistogram = (
           .append("g")
           .attr(
             "transform",
-            `translate(${
-              margin.left +
-              (i * plotWidth +
-                i * (colPadding / 2) +
-                (i + 1) * (colPadding / 2))
-            },${
-              margin.top +
-              j * plotHeight +
-              j * (rowPadding / 2) +
-              (j + 1) * (rowPadding / 2)
+            `translate(${margin.left +
+            (i * plotWidth +
+              i * (colPadding / 2) +
+              (i + 1) * (colPadding / 2))
+            },${margin.top +
+            j * plotHeight +
+            j * (rowPadding / 2) +
+            (j + 1) * (rowPadding / 2)
             })`
           );
         const title = `${facXValue} / ${facYValue}`;
         const x_label =
           variables.mappingToLong[
-            var_x as keyof typeof variables.mappingToLong
+          var_x as keyof typeof variables.mappingToLong
           ];
         if (variables.discreteOptionsShort.includes(var_x)) {
           const xScale = d3
@@ -885,14 +887,12 @@ const fullHistogram = (
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${
-          margin.left +
-          (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
-        },${
-          margin.top +
-          j * plotHeight +
-          j * (rowPadding / 2) +
-          (j + 1) * (rowPadding / 2)
+        `translate(${margin.left +
+        (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+        },${margin.top +
+        j * plotHeight +
+        j * (rowPadding / 2) +
+        (j + 1) * (rowPadding / 2)
         })
           `
       );
@@ -985,14 +985,12 @@ const fullHistogram = (
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${
-          margin.left +
-          (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
-        },${
-          margin.top +
-          j * plotHeight +
-          j * (rowPadding / 2) +
-          (j + 1) * (rowPadding / 2)
+        `translate(${margin.left +
+        (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+        },${margin.top +
+        j * plotHeight +
+        j * (rowPadding / 2) +
+        (j + 1) * (rowPadding / 2)
         })
           `
       );
@@ -1083,14 +1081,12 @@ const fullHistogram = (
     // Append a group for each facet
     const facetGroup = svg.append("g").attr(
       "transform",
-      `translate(${
-        margin.left +
-        (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
-      },${
-        margin.top +
-        j * plotHeight +
-        j * (rowPadding / 2) +
-        (j + 1) * (rowPadding / 2)
+      `translate(${margin.left +
+      (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+      },${margin.top +
+      j * plotHeight +
+      j * (rowPadding / 2) +
+      (j + 1) * (rowPadding / 2)
       })
           `
     );
