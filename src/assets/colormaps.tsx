@@ -25,4 +25,16 @@ const reg_cmaps = {
   CAS: "#FF99BD",
 };
 
-export { data_cmaps, reg_cmaps };
+const anc_cmaps = {
+  All: "black",
+  nonDAVC: "grey",
+  Denisova: "#3330E4",
+  Neanderthal: "red",
+  Altai: "#FFF23B",
+  Vindija: "#FAB648",
+  Chagyrskaya: "#E36936",
+  AmbigNean: "#FA73A0",
+  Ambiguous: "#71FF3B",
+};
+
+export { data_cmaps, reg_cmaps, anc_cmaps };

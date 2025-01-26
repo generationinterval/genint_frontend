@@ -1,5 +1,3 @@
-import { lab } from "d3";
-import { reverse } from "node:dns";
 
 export const datasets = {
   options: [
@@ -152,6 +150,11 @@ export const bin_marks = [
   { value: 50, label: "50" },
   { value: 75, label: "75" },
   { value: 100, label: "100" },
+];
+
+export const bandwidth_divisor_marks = [
+  { value: 1, label: "Dense" },
+  { value: 100, label: "Light" },
 ];
 
 export const map_jit_marks = [
