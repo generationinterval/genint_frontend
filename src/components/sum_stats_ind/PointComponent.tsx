@@ -3,6 +3,7 @@ import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
 import * as jStat from "jstat";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
+import { data_cmaps, reg_cmaps, anc_cmaps } from "@/assets/colormaps";
 
 type PointPlotProps = {
   data: any[];
@@ -29,6 +30,17 @@ const createColorScale = (
   discreteOrContinuous: string;
   globalColorOrder: string[];
 } => {
+  const dataColorScale = (dat: string) => {
+    return data_cmaps[dat as keyof typeof data_cmaps] || "#CCCCCC";
+  };
+
+  const regColorScale = (reg: string) => {
+    return reg_cmaps[reg as keyof typeof reg_cmaps] || "#CCCCCC";
+  };
+
+  const ancColorScale = (anc: string) => {
+    return anc_cmaps[anc as keyof typeof anc_cmaps] || "#CCCCCC";
+  };
   let getColor: (d: DataPoint) => string;
   let legendData: { label: string; color: string; extent?: [number, number] }[];
   let discreteOrContinuous: string;
@@ -46,7 +58,7 @@ const createColorScale = (
     const extent = d3.extent(data, (d) => +d[col[0] as keyof DataPoint]!);
     const isExtentValid = extent[0] !== undefined && extent[1] !== undefined;
     const colorScale = d3
-      .scaleSequential(d3.interpolateViridis)
+      .scaleSequential(d3.interpolateTurbo)
       .domain(extent as [number, number]);
 
     getColor = (d) => {
@@ -64,7 +76,91 @@ const createColorScale = (
       : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
     discreteOrContinuous = "continuous";
     globalColorOrder = []; // Continuous variables don't have a strict "order" per se
+  } else if (col.length === 1 && col[0] === "dat") {
+    // Extract unique values
+    const uniqueValues = [
+      ...new Set(
+        data
+          .map((d) => d.dat)
+          .filter((value) => value !== null && value !== undefined)
+          .map(String)
+      ),
+    ];
+    getColor = (d) => {
+      const val = d.dat;
+      return val !== null && val !== undefined
+        ? dataColorScale(String(val))
+        : "#CCCCCC";
+    };
+    legendData = uniqueValues.map((value) => ({
+      label:
+        variables.mappingToLong[
+          value as keyof typeof variables.mappingToLong
+        ] || value,
+      color: dataColorScale(String(value)),
+    }));
+
+    discreteOrContinuous = "discrete";
+    globalColorOrder = uniqueValues;
+  } // 3) If col.length = 1 and col = "reg"
+  else if (col.length === 1 && col[0] === "reg") {
+    const uniqueValues = [
+      ...new Set(
+        data
+          .map((d) => d.reg)
+          .filter((value) => value !== null && value !== undefined)
+          .map(String)
+      ),
+    ];
+
+    getColor = (d) => {
+      const val = d.reg;
+      return val !== null && val !== undefined
+        ? regColorScale(String(val))
+        : "#CCCCCC";
+    };
+
+    legendData = uniqueValues.map((value) => ({
+      label:
+        variables.mappingToLong[
+          value as keyof typeof variables.mappingToLong
+        ] || value,
+      color: regColorScale(String(value)),
+    }));
+
+    discreteOrContinuous = "discrete";
+    globalColorOrder = uniqueValues;
   }
+  // 4) If col.length = 1 and col = "anc"
+  else if (col.length === 1 && col[0] === "anc") {
+    const uniqueValues = [
+      ...new Set(
+        data
+          .map((d) => d.anc)
+          .filter((value) => value !== null && value !== undefined)
+          .map(String)
+      ),
+    ];
+
+    getColor = (d) => {
+      const val = d.anc;
+      return val !== null && val !== undefined
+        ? ancColorScale(String(val))
+        : "#CCCCCC";
+    };
+
+    legendData = uniqueValues.map((value) => ({
+      label:
+        variables.mappingToLong[
+          value as keyof typeof variables.mappingToLong
+        ] || value,
+      color: ancColorScale(String(value)),
+    }));
+
+    discreteOrContinuous = "discrete";
+    globalColorOrder = uniqueValues;
+  }
+
   // Rule 3: If the variable in col is discrete, create a categorical colormap
   else {
     const uniqueValues = [

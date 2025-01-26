@@ -1,3 +1,4 @@
+import { anc_cmaps, data_cmaps, reg_cmaps } from "@/assets/colormaps";
 import { variables } from "@/assets/FilterOptions";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import * as d3 from "d3";
@@ -32,26 +33,67 @@ const createColorScale = (
   let discreteOrContinuous: string;
   let globalColorOrder: string[] = [];
 
+  // 1) If col length = 1 and it is empty => use default color
   if (col.length === 1 && col[0] === "") {
     const defaultColor = "steelblue";
     getColor = () => defaultColor;
     legendData = [{ label: "Default Color", color: defaultColor }];
     discreteOrContinuous = "default";
-    globalColorOrder = [defaultColor]; // Only one color, steelblue
+    globalColorOrder = [defaultColor];
   }
-  // Rule 2: If the variable in col is continuous, create a continuous colormap
+  // 2) If col length = 1 and col[0] is in { "reg", "dat", "anc" }, use your custom maps
+  else if (col.length === 1 && ["reg", "dat", "anc"].includes(col[0])) {
+    // Determine which colormap object to use
+    let chosenMap: Record<string, string> = {};
+    if (col[0] === "reg") {
+      chosenMap = reg_cmaps;
+    } else if (col[0] === "dat") {
+      chosenMap = data_cmaps;
+    } else if (col[0] === "anc") {
+      chosenMap = anc_cmaps;
+    }
+
+    // Extract unique 'color' values from data
+    const uniqueValues = [
+      ...new Set(
+        data
+          .map((d) => d.color)
+          .filter((c) => c !== null && c !== undefined)
+          .map(String)
+      ),
+    ];
+
+    // The getColor function looks up the color in the chosen map, fallback to "steelblue"
+    getColor = (d) => {
+      const val = d.color;
+      if (!val) return "steelblue";
+      return chosenMap[val] || "steelblue";
+    };
+
+    // Build legend data, using either the encountered uniqueValues or all keys from chosenMap
+    // Here we just build from encountered uniqueValues to show only what's in data:
+    legendData = uniqueValues.map((val) => ({
+      label:
+        variables.mappingToLong[
+        val as keyof typeof variables.mappingToLong
+        ] || String(val),             // Or a custom label if you have a mapping
+      color: chosenMap[val] || "steelblue",
+    }));
+
+    discreteOrContinuous = "discrete";
+    globalColorOrder = uniqueValues; // So your chart can order categories consistently
+  }
+  // 3) If col[0] is in continuousOptionsShort => use continuous colormap logic
   else if (variables.continuousOptionsShort.includes(col[0])) {
     const extent = d3.extent(data, (d) => +d[col[0] as keyof DataPoint]!);
     const isExtentValid = extent[0] !== undefined && extent[1] !== undefined;
-    const colorScale = d3
-      .scaleSequential(d3.interpolateViridis)
-      .domain(extent as [number, number]);
+    const colorScale = d3.scaleSequential(d3.interpolateViridis).domain(extent as [number, number]);
 
     getColor = (d) => {
       const value = d[col[0] as keyof DataPoint];
       return value !== null && value !== undefined
         ? colorScale(+value)
-        : "steelblue"; // Fallback color if value is undefined
+        : "steelblue";
     };
 
     legendData = isExtentValid
@@ -59,37 +101,31 @@ const createColorScale = (
         { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
         { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
       ]
-      : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
+      : [{ label: "No valid data", color: "steelblue" }];
     discreteOrContinuous = "continuous";
-    globalColorOrder = []; // Continuous variables don't have a strict "order" per se
+    globalColorOrder = [];
   }
-  // Rule 3: If the variable in col is discrete, create a categorical colormap
+  // 4) Otherwise, treat as discrete with the default d3.schemeCategory10 approach
   else {
     const uniqueValues = [
       ...new Set(
         data
-          .map((d) => d.color) // Extract "color" property from each DataPoint
-          .filter((color) => color !== null && color !== undefined) // Filter out null and undefined values
-          .map(String) // Convert all color values to strings (in case they're not)
+          .map((d) => d.color)
+          .filter((c) => c !== null && c !== undefined)
+          .map(String)
       ),
     ];
-
-    const colorScale = d3
-      .scaleOrdinal(d3.schemeCategory10)
-      .domain(uniqueValues);
+    const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(uniqueValues);
 
     getColor = (d) => {
       const value = d.color;
       return value !== null && value !== undefined
         ? colorScale(String(value))
-        : "steelblue"; // Fallback color if value is undefined
+        : "steelblue";
     };
 
     legendData = uniqueValues.map((value) => ({
-      label:
-        variables.mappingToLong[
-        value as keyof typeof variables.mappingToLong
-        ] || String(value),
+      label: variables.mappingToLong[value as keyof typeof variables.mappingToLong] || value,
       color: colorScale(value),
     }));
     discreteOrContinuous = "discrete";

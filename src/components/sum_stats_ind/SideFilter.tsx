@@ -1,36 +1,37 @@
-import React from "react";
-import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import {
-  datasets,
   ancestries,
+  axis,
+  bandwidth_divisor_marks,
+  bin_marks,
   chrms_discrete,
+  datasets,
+  map_jit_marks,
   mpp_marks,
   regions,
-  variables,
-  bin_marks,
-  axis,
-  map_jit_marks,
+  variables
 } from "@/assets/FilterOptions";
 import { icons } from "@/assets/icons"; // Import your icons
+import { checkboxBoxStyles } from "@/assets/styles";
+import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
+import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
 import {
   Box,
   Button,
+  Checkbox,
+  FormControl,
+  FormControlLabel,
   Grid,
+  InputLabel,
+  MenuItem,
+  Select,
   Slider,
-  Typography,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  FormControlLabel,
+  Typography,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
-import { checkboxBoxStyles } from "@/assets/styles";
-import { TextField } from "@mui/material";
-import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
+import React from "react";
 import "./SideFilter.css";
 
 interface FilterState {
@@ -76,6 +77,7 @@ interface FilterState {
   map_lat_jit: number;
   map_lon_jit: number;
   tree_lin: string[];
+  bandwidth_divisor: number;
 }
 
 interface SideFilterProps {
@@ -138,12 +140,12 @@ const SideFilter: React.FC<SideFilterProps> = ({
 
   const handleCheckbox =
     (key: keyof FilterState) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        [key]: event.target.checked,
-      }));
-    };
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          [key]: event.target.checked,
+        }));
+      };
 
   const handleSlider =
     (key: keyof FilterState) => (event: Event, newValue: number | number[]) => {
@@ -194,28 +196,29 @@ const SideFilter: React.FC<SideFilterProps> = ({
   };
 
   const options = tabValue === 0 ? plotOptionsSingle : plotOptionsDouble;
-
-  const handlePlotType = (event: SelectChangeEvent<string>) => {
-    const value = event.target.value;
-    const defaultValues = getDefaultValuesForPlot(value);
-
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      plot: value,
-      ...defaultValues,
-    }));
-  };
-  const handleNumberInput =
-    (key: keyof FilterState) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  /* 
+    const handlePlotType = (event: SelectChangeEvent<string>) => {
       const value = event.target.value;
-      const numericValue = Number(value);
-
-      setFilters((prevFilters: FilterState) => ({
+      const defaultValues = getDefaultValuesForPlot(value);
+  
+      setFilters((prevFilters) => ({
         ...prevFilters,
-        [key]: numericValue,
+        plot: value,
+        ...defaultValues,
       }));
     };
+     */
+  const handleNumberInput =
+    (key: keyof FilterState) =>
+      (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = event.target.value;
+        const numericValue = Number(value);
+
+        setFilters((prevFilters: FilterState) => ({
+          ...prevFilters,
+          [key]: numericValue,
+        }));
+      };
 
   const handleToggle = (
     event: React.MouseEvent<HTMLElement>,
@@ -268,6 +271,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           min_y_axis: 0,
           max_y_axis: 0,
           tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          bandwidth_divisor: 30,
         };
       case "Histogram":
         return {
@@ -360,8 +364,8 @@ const SideFilter: React.FC<SideFilterProps> = ({
           fac_x_mapped: ["dat"],
           fac_y: [],
           fac_y_mapped: [],
-          mea_med_x: true,
-          mea_med_y: true,
+          mea_med_x: false,
+          mea_med_y: false,
           x_axis: "Free Axis",
           min_x_axis: 0,
           max_x_axis: 0,
@@ -495,11 +499,17 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   label="Variable"
                   onChange={handleSingleMap("var_1")}
                 >
-                  {variables.options_all.map((option, index) => (
-                    <MenuItem key={index} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
+                  {filters.plot === "Density"
+                    ? variables.continuousOptions.map((option, index) => (
+                      <MenuItem key={index} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))
+                    : variables.options_all.map((option, index) => (
+                      <MenuItem key={index} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
                 </Select>
               </FormControl>
               {filters.plot !== "Map" && (
@@ -538,8 +548,8 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     {(filters.plot === "Points"
                       ? variables.continuousOptions
                       : filters.plot === "placeholder"
-                      ? variables.discreteOptions
-                      : variables.options_all
+                        ? variables.discreteOptions
+                        : variables.options_all
                     ).map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
@@ -582,8 +592,8 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     {(filters.plot === "Points"
                       ? variables.continuousOptions
                       : filters.plot === "placeholder"
-                      ? variables.discreteOptions
-                      : variables.options_all
+                        ? variables.discreteOptions
+                        : variables.options_all
                     ).map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
@@ -682,12 +692,12 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 <MultipleSelectChip
                   sx={{ mb: 1 }}
                   options={
-                    filters.plot === "Violin"
+                    filters.plot === "Violin" || filters.plot === "Density"
                       ? variables.discreteOptions
                       : [
-                          ...variables.discreteOptions,
-                          ...variables.continuousOptions,
-                        ]
+                        ...variables.discreteOptions,
+                        ...variables.continuousOptions,
+                      ]
                   }
                   label="Color by"
                   selectedValues={filters.col}
@@ -701,6 +711,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   selectedValues={filters.fac_x}
                   onChange={handleMultiMap("fac_x")}
                 />
+
                 {filters.plot !== "Violin" && (
                   <MultipleSelectChip
                     sx={{ mb: 1, mt: 1 }}
@@ -803,6 +814,36 @@ const SideFilter: React.FC<SideFilterProps> = ({
                       inputProps={{ type: "number" }}
                       value={filters.max_y_axis}
                       onChange={handleNumberInput("max_y_axis")}
+                    />
+                  </Box>
+                )}
+                {filters.plot == "Violin" && (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      mb: 1,
+                      mt: 1,
+                    }}
+                  >
+                    <Typography
+                      className="contrast-text"
+                      sx={{ mt: 0, textAlign: "center" }}
+                    >
+                      Violin density
+                    </Typography>
+                    <Slider
+                      value={filters.bandwidth_divisor}
+                      onChange={handleSlider("bandwidth_divisor")}
+                      aria-labelledby="discrete-slider"
+                      valueLabelDisplay="off"
+                      step={1}
+                      marks={bandwidth_divisor_marks}
+                      min={1}
+                      max={100}
+                      sx={{ width: "85%" }}
                     />
                   </Box>
                 )}

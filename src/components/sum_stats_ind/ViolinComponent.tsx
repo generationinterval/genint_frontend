@@ -1,11 +1,14 @@
-import React, { useRef, useEffect } from "react";
-import * as d3 from "d3";
 import { variables } from "@/assets/FilterOptions";
+import { anc_cmaps, data_cmaps, reg_cmaps } from "@/assets/colormaps";
+import { kernelDensityEstimator, kernelEpanechnikov } from "@/components/sum_stats_ind/densityUtils";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
+import * as d3 from "d3";
+import React, { useEffect, useRef } from "react";
 
 type ViolinPlotProps = {
   data: any[];
   var_1_mapped: string;
+  bandwidth_divisor: number;
   col: string[];
   isSidebarVisible: boolean;
   mea_med_1: boolean;
@@ -54,51 +57,59 @@ const createColorScale = (
     // Step 3: Set globalColorOrder based on the sorted groups
     globalColorOrder = sortedGroups.map((group) => group.key);
 
-    // Step 4: Create a color scale using the sorted color order
-    const colorScale = d3
-      .scaleOrdinal(d3.schemeCategory10)
-      .domain(globalColorOrder);
+    if (col.length === 1 && ["reg", "dat", "anc"].includes(col[0])) {
+      // Determine which colormap object to use
+      let chosenMap: Record<string, string> = {};
+      if (col[0] === "reg") {
+        chosenMap = reg_cmaps;
+      } else if (col[0] === "dat") {
+        chosenMap = data_cmaps;
+      } else if (col[0] === "anc") {
+        chosenMap = anc_cmaps;
+      }
+      getColor = (d) => {
+        const val = d.color;
+        if (!val) return "steelblue";
+        return chosenMap[val] || "steelblue";
+      };
+      // Step 5: Generate legend data
+      legendData = globalColorOrder.map((val) => ({
+        label:
+          variables.mappingToLong[
+          val as keyof typeof variables.mappingToLong
+          ] || String(val),             // Or a custom label if you have a mapping
+        color: chosenMap[val] || "steelblue",
+      }));
+      discreteOrContinuous = "discrete";
+    }
+    else {
+      // Step 4: Create a color scale using the sorted color order
+      const colorScale = d3
+        .scaleOrdinal(d3.schemeCategory10)
+        .domain(globalColorOrder);
 
-    getColor = (d) => {
-      const value = d.color;
-      return value !== null && value !== undefined
-        ? colorScale(String(value))
-        : "steelblue"; // Fallback color if value is undefined
-    };
-    // Step 5: Generate legend data
-    legendData = globalColorOrder.map((value) => ({
-      label:
-        variables.mappingToLong[
+      getColor = (d) => {
+        const value = d.color;
+        return value !== null && value !== undefined
+          ? colorScale(String(value))
+          : "steelblue"; // Fallback color if value is undefined
+      };
+      // Step 5: Generate legend data
+      legendData = globalColorOrder.map((value) => ({
+        label:
+          variables.mappingToLong[
           value as keyof typeof variables.mappingToLong
-        ] || String(value),
-      color: colorScale(value),
-    }));
-    discreteOrContinuous = "discrete";
+          ] || String(value),
+        color: colorScale(value),
+      }));
+      discreteOrContinuous = "discrete";
+    }
   }
-
   return { getColor, legendData, discreteOrContinuous, globalColorOrder };
 };
 
-function kernelDensityEstimator(
-  kernel: { (v: any): number; (arg0: number): number | null | undefined },
-  X: any[]
-) {
-  return function (V: Iterable<unknown>) {
-    return X.map(function (x) {
-      return [
-        x,
-        d3.mean(V, function (v) {
-          return kernel(x - (v as number));
-        }),
-      ];
-    });
-  };
-}
-function kernelEpanechnikov(k: number) {
-  return function (v: number) {
-    return Math.abs((v /= k)) <= 1 ? (0.75 * (1 - v * v)) / k : 0;
-  };
-}
+
+
 const drawViolin = (
   facetGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
   data: DataPoint[],
@@ -107,6 +118,7 @@ const drawViolin = (
   y_axis: string,
   min_y_axis: number,
   max_y_axis: number,
+  bandwidth_divisor: number,
   plotHeight: number,
   plotWidth: number,
   var_x: string,
@@ -137,13 +149,29 @@ const drawViolin = (
     .attr("y1", -30)
     .attr("y2", plotHeight)
     .attr("stroke", "black");
+  // 1) Compute extent of your variable
+  const extent = d3.extent(data, (d) => d[var_x as keyof DataPoint] as number);
+  // extent is [number | undefined, number | undefined]
 
-  var kde = kernelDensityEstimator(
-    kernelEpanechnikov(1000),
-    yScale.ticks(1000)
-  );
+  if (extent[0] == null || extent[1] == null) {
+    // Handle the case where extent is undefined (e.g., empty data)
+    // Provide a fallback or throw an error
+    throw new Error("No valid extent found for data");
+  }
 
-  var sumstat = Array.from(
+  const [minValue, maxValue] = extent;
+
+  // 2) Pick a bandwidth based on data range (simplistic example)
+  const bandwidth = (maxValue - minValue) / bandwidth_divisor;
+
+  // 3) Create sample points in that range
+  const samplePoints = d3.range(minValue, maxValue, (maxValue - minValue) / 3000);
+
+  // 4) Define your KDE with dynamic bandwidth
+  const kde = kernelDensityEstimator(kernelEpanechnikov(bandwidth), samplePoints);
+
+
+  const sumstat = Array.from(
     d3.group(data, (d) => d.color),
     ([key, value]) => ({
       key,
@@ -321,16 +349,16 @@ const drawViolin = (
           const xPosition = xScale(groupData[0].color);
           return xPosition !== undefined
             ? xPosition +
-                xScale.bandwidth() / 2 -
-                densityScale(densityForMean) / 2
+            xScale.bandwidth() / 2 -
+            densityScale(densityForMean) / 2
             : 0;
         })
         .attr("x2", () => {
           const xPosition = xScale(groupData[0].color);
           return xPosition !== undefined
             ? xPosition +
-                xScale.bandwidth() / 2 +
-                densityScale(densityForMean) / 2
+            xScale.bandwidth() / 2 +
+            densityScale(densityForMean) / 2
             : 0;
         })
         .attr("y1", () => yScale(mean))
@@ -344,8 +372,7 @@ const drawViolin = (
         .on("mouseenter", (event) => {
           meaMedTooltip.transition().duration(200).style("opacity", 1); // Show tooltip
           meaMedTooltip.html(
-            `<strong>Group:</strong> ${
-              groupData[0].color
+            `<strong>Group:</strong> ${groupData[0].color
             }<br/><strong>Mean:</strong> ${mean.toFixed(2)}`
           );
         })
@@ -366,16 +393,16 @@ const drawViolin = (
           const xPosition = xScale(groupData[0].color);
           return xPosition !== undefined
             ? xPosition +
-                xScale.bandwidth() / 2 -
-                densityScale(densityForMedian) / 2
+            xScale.bandwidth() / 2 -
+            densityScale(densityForMedian) / 2
             : 0;
         })
         .attr("x2", () => {
           const xPosition = xScale(groupData[0].color);
           return xPosition !== undefined
             ? xPosition +
-                xScale.bandwidth() / 2 +
-                densityScale(densityForMedian) / 2
+            xScale.bandwidth() / 2 +
+            densityScale(densityForMedian) / 2
             : 0;
         })
         .attr("y1", () => yScale(median))
@@ -389,8 +416,7 @@ const drawViolin = (
         .on("mouseenter", (event) => {
           meaMedTooltip.transition().duration(200).style("opacity", 1);
           meaMedTooltip.html(
-            `<strong>Group:</strong> ${
-              groupData[0].color
+            `<strong>Group:</strong> ${groupData[0].color
             }<br/><strong>Median:</strong> ${median.toFixed(2)}`
           );
         })
@@ -410,6 +436,7 @@ const drawViolin = (
 const ViolinComponent: React.FC<ViolinPlotProps> = ({
   data,
   var_1_mapped,
+  bandwidth_divisor,
   col,
   isSidebarVisible,
   mea_med_1,
@@ -427,13 +454,14 @@ const ViolinComponent: React.FC<ViolinPlotProps> = ({
         data,
         col,
         var_1_mapped,
+        bandwidth_divisor,
         mea_med_1,
         y_axis,
         min_y_axis,
         max_y_axis
       );
     }
-  }, [data, col, var_1_mapped]); // Re-render the histogram when any prop changes
+  }, [data, col, var_1_mapped, bandwidth_divisor]); // Re-render the histogram when any prop changes
 
   const handleResize = () => {
     if (containerRef.current && svgRef.current && data) {
@@ -445,6 +473,7 @@ const ViolinComponent: React.FC<ViolinPlotProps> = ({
         data,
         col,
         var_1_mapped,
+        bandwidth_divisor,
         mea_med_1,
         y_axis,
         min_y_axis,
@@ -485,6 +514,7 @@ const fullViolin = (
   data: DataPoint[],
   col: string[],
   var_x: string,
+  bandwidth_divisor: number,
   showMeanMedian: boolean,
   y_axis: string,
   min_y_axis: number,
@@ -711,7 +741,7 @@ const fullViolin = (
         .map(
           (value) =>
             variables.mappingToLong[
-              value as keyof typeof variables.mappingToLong
+            value as keyof typeof variables.mappingToLong
             ]
         )
         .join("-");
@@ -724,6 +754,7 @@ const fullViolin = (
         y_axis,
         min_y_axis,
         max_y_axis,
+        bandwidth_divisor,
         plotHeight,
         plotWidth,
         var_x,
@@ -788,6 +819,7 @@ const fullViolin = (
       y_axis,
       min_y_axis,
       max_y_axis,
+      bandwidth_divisor,
       plotHeight,
       plotWidth,
       var_x,

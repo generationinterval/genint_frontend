@@ -1,10 +1,10 @@
-import React, { useEffect, useRef } from "react";
-import L from "leaflet";
-import * as d3 from "d3";
-import "leaflet/dist/leaflet.css";
 import { variables } from "@/assets/FilterOptions";
 import { data_cmaps, reg_cmaps } from "@/assets/colormaps";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
+import * as d3 from "d3";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import React, { useEffect, useRef } from "react";
 
 interface JitteredDataPoint extends DataPoint {
   jitteredLat?: number;
@@ -61,9 +61,9 @@ const createColorScale = (
 
     legendData = isExtentValid
       ? [
-          { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
-          { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
-        ]
+        { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
+        { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
+      ]
       : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
     discreteOrContinuous = "continuous";
   }
@@ -156,10 +156,92 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   useEffect(() => {
     if (!mapRef.current) return;
+    const mapElement = mapRef.current;
     const bounds = L.latLngBounds(
       L.latLng(-85, -250), // Southwest corner
       L.latLng(85, 250) // Northeast corner
     );
+    const tooltip = d3
+      .select(mapElement)
+      .append("div")
+      .attr("class", "map-tooltip")
+      .style("position", "absolute")
+      .style("background", "white")
+      .style("border", "1px solid #ccc")
+      .style("padding", "10px")
+      .style("border-radius", "5px")
+      .style("box-shadow", "0 0 10px rgba(0,0,0,0.1)")
+      .style("pointer-events", "none")
+      .style("z-index", "1000")
+      .style("opacity", 0)
+      .style("display", "none");
+    // Function to format numeric values with limited decimal places
+    const formatValue = (value: number | string | null, decimals = 3): string => {
+      if (value === null || value === undefined) return 'N/A';
+      if (typeof value === 'string') return value;
+      if (value === 0) {
+        return '0';
+      }
+
+      // Use scientific notation if |value| < 0.1:
+      if (Math.abs(value) < 0.1) {
+        // Convert to exponential with 'decimals' digits
+        const exp = value.toExponential(decimals); // e.g. "9.000e-2"
+        const [mantissaRaw, exponent] = exp.split('e');
+        const mantissa = mantissaRaw.replace(/\.?0+$/, '');
+
+        return `${mantissa}e${exponent}`;
+      } else {
+        // Use Intl.NumberFormat for comma separators.
+        // "maximumFractionDigits" ensures up to `decimals` places
+        // "minimumFractionDigits: 0" strips trailing zeros
+        const formatter = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: decimals,
+        });
+        return formatter.format(value);
+      }
+    };
+
+    // Updated tooltip positioning function
+    const positionTooltip = (event: MouseEvent, d: JitteredDataPoint) => {
+      // Get the map's current container dimensions
+      const mapRect = mapElement.getBoundingClientRect();
+
+      // Calculate mouse position relative to the map container
+      const mouseX = event.clientX - mapRect.left;
+      const mouseY = event.clientY - mapRect.top;
+
+      // Position the tooltip
+      tooltip
+        .style("left", `${mouseX + 10}px`)
+        .style("top", `${mouseY + 10}px`)
+        .style("display", "block")
+        .style("opacity", 1)
+        .html(`
+          <div style="font-size: 12px; max-width: 250px;">
+            <strong>Individual:</strong> ${d.ind}<br/>
+            <strong>Sex:</strong> ${d.sex}<br/>
+            <strong>Dataset:</strong> ${d.dat}<br/>
+            <strong>Region:</strong> ${d.reg}<br/>
+            <strong>Population:</strong> ${d.pop}<br/>
+            <strong>Chromosome:</strong> ${d.chrom}<br/>
+            <strong>Haplotype:</strong> ${formatValue(d.hap)}<br/>
+            <strong>Sequence:</strong> ${formatValue(d.seq)}<br/>
+            <strong>Time:</strong> ${formatValue(d.tim)}<br/>
+            <strong>Length (Mean):</strong> ${formatValue(d.len_mea)}<br/>
+            <strong>Length (Median):</strong> ${formatValue(d.len_med)}<br/>
+            <strong>Length (Max):</strong> ${formatValue(d.len_max)}<br/>
+            <strong>Length (Min):</strong> ${formatValue(d.len_min)}<br/>
+            ${d.ancAMR !== null ? `<strong>Ancestry AMR:</strong> ${formatValue(d.ancAMR)}<br/>` : ''}
+            ${d.ancEAS !== null ? `<strong>Ancestry EAS:</strong> ${formatValue(d.ancEAS)}<br/>` : ''}
+            ${d.ancSAS !== null ? `<strong>Ancestry SAS:</strong> ${formatValue(d.ancSAS)}<br/>` : ''}
+            ${d.ancAFR !== null ? `<strong>Ancestry AFR:</strong> ${formatValue(d.ancAFR)}<br/>` : ''}
+            ${d.ancEUR !== null ? `<strong>Ancestry EUR:</strong> ${formatValue(d.ancEUR)}<br/>` : ''}
+            ${d.ancOCE !== null ? `<strong>Ancestry OCE:</strong> ${formatValue(d.ancOCE)}<br/>` : ''}
+          </div>
+        `);
+    };
 
     // Initialize the map
     const map = L.map(mapRef.current, {
@@ -257,7 +339,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .selectAll(".circle_ind")
         .attr("cx", (d: any) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
         .attr("cy", (d: any) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-        .attr("r", baseRadiusInd * scaleFactor);
+        .attr("r", baseRadiusInd * scaleFactor)
+        .attr("pointer-events", "visible");
     }
 
     const { getColor, legendData, discreteOrContinuous } = createColorScale(
@@ -331,7 +414,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     svg
-      .selectAll(".circe_ind")
+      .selectAll(".circle_ind")
       .data(jitteredData)
       .enter()
       .append("circle")
@@ -340,7 +423,30 @@ const MapComponent: React.FC<MapComponentProps> = ({
       .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
       .attr("r", baseRadiusInd * scaleFactor)
       .attr("fill", (d) => getColor(d))
-      .attr("fill-opacity", 1);
+      .attr("fill-opacity", 1)
+      .on("mouseenter", function (event, d) {
+        // Highlight the circle
+        d3.select(this)
+          .attr("stroke", "black")
+          .attr("stroke-width", 2);
+
+        // Position and show the tooltip
+        positionTooltip(event, d);
+      })
+      .on("mousemove", function (event, d) {
+        // Update tooltip position as mouse moves
+        positionTooltip(event, d);
+      })
+      .on("mouseleave", function () {
+        // Remove highlight and hide tooltip
+        d3.select(this)
+          .attr("stroke", null)
+          .attr("stroke-width", 0);
+
+        tooltip
+          .style("display", "none")
+          .style("opacity", 0);
+      });
 
     map.on("moveend", updateCircles);
     map.on("zoomend", updateCircles);
@@ -410,19 +516,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
         // Add min label at the bottom of the gradient
         gradientLegend
           .append("text")
-          .attr("x", 40) // Position to the right of the gradient rectangle
-          .attr("y", 210) // Position slightly below the rectangle
-          .style("font-size", "10px") // Adjust font size if needed
-          .text(`Min: ${extent[0].toFixed(3)}`);
+          .attr("x", 40)
+          .attr("y", 210)
+          .style("font-size", "15px")
+          .text(`Min: ${formatValue(extent[0], 3)}`);
 
         // Add max label at the top of the gradient
         gradientLegend
           .append("text")
           .attr("x", 40) // Position to the right of the gradient rectangle
-          .attr("y", 10) // Position slightly above the rectangle
-          .attr("dy", "0.35em")
-          .style("font-size", "10px") // Adjust font size if needed
-          .text(`Max: ${extent[1].toFixed(3)}`);
+          .attr("y", 25)
+          .style("font-size", "15px") // Adjust font size if needed
+          .text(`Max: ${formatValue(extent[1], 3)}`);
       } else {
         // Discrete legend
         legendData.forEach((item) => {
@@ -514,6 +619,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     return () => {
       map.remove();
+      tooltip.remove();
     };
   }, [
     data,

@@ -1,20 +1,20 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Grid, Tabs, Tab, Button } from "@mui/material";
-import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
-import SideFilter from "@/components/sum_stats_ind/SideFilter";
-import HistogramComponent from "@/components/sum_stats_ind/HistogramComponent";
-import ViolinComponent from "@/components/sum_stats_ind/ViolinComponent";
-import PointComponent from "@/components/sum_stats_ind/PointComponent";
-import MapComponent from "@/components/sum_stats_ind/MapComponent";
-import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
-import { saveAs } from "file-saver";
 import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
+import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
+import HistogramComponent from "@/components/sum_stats_ind/HistogramComponent";
+import "@/components/sum_stats_ind/HistogramComponent.css";
+import MapComponent from "@/components/sum_stats_ind/MapComponent";
+import PointComponent from "@/components/sum_stats_ind/PointComponent";
+import SideFilter from "@/components/sum_stats_ind/SideFilter";
+import ViolinComponent from "@/components/sum_stats_ind/ViolinComponent";
+import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import DownloadIcon from "@mui/icons-material/Download";
 import ImageIcon from "@mui/icons-material/Image";
-import Papa from "papaparse";
 import TocIcon from "@mui/icons-material/Toc";
-import "@/components/sum_stats_ind/HistogramComponent.css";
-import { DataPoint } from "@/types/sum_stat_ind_datapoint";
+import { Button, Grid } from "@mui/material";
+import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
+import { saveAs } from "file-saver";
+import Papa from "papaparse";
+import React, { useEffect, useRef, useState } from "react";
 interface FilterState {
   var_1: string;
   var_1_mapped: string;
@@ -58,6 +58,7 @@ interface FilterState {
   map_lat_jit: number;
   map_lon_jit: number;
   tree_lin: string[];
+  bandwidth_divisor: number;
 }
 
 export const SummStatInd: React.FC = () => {
@@ -107,6 +108,7 @@ export const SummStatInd: React.FC = () => {
     map_lat_jit: 1,
     map_lon_jit: 1,
     tree_lin: [],
+    bandwidth_divisor: 30,
   });
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
@@ -345,6 +347,7 @@ export const SummStatInd: React.FC = () => {
               <ViolinComponent
                 data={data}
                 var_1_mapped={filters.var_1_mapped}
+                bandwidth_divisor={filters.bandwidth_divisor}
                 col={filters.col_mapped}
                 isSidebarVisible={isSidebarVisible}
                 mea_med_1={filters.mea_med_1}
@@ -438,9 +441,9 @@ export const SummStatInd: React.FC = () => {
               columns={columns}
               pagination
               autoPageSize // Automatically calculate the number of rows based on the container's height
-              getRowId={(row) => `${row.lin}_${row.hap}`}
+              getRowId={(row) => `${row.lin}_${row.hap}_${row.anc}`}
 
-              // Ensure correct row identification
+            // Ensure correct row identification
             />
 
             {/* Positioned Buttons for CSV and Plot View */}
