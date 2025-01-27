@@ -2,6 +2,7 @@ import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownl
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import HistogramComponent from "@/components/sum_stats_ind/HistogramComponent";
 import "@/components/sum_stats_ind/HistogramComponent.css";
+import IDDensityComponent from "@/components/sum_stats_ind/IDDensityComponent";
 import MapComponent from "@/components/sum_stats_ind/MapComponent";
 import PointComponent from "@/components/sum_stats_ind/PointComponent";
 import SideFilter from "@/components/sum_stats_ind/SideFilter";
@@ -122,7 +123,6 @@ export const SummStatInd: React.FC = () => {
       applyFilters();
       console.log(filters);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.plot]);
   const applyFilters = async () => {
     setLoading(true);
@@ -370,6 +370,21 @@ export const SummStatInd: React.FC = () => {
                 y_axis={filters.y_axis}
                 min_y_axis={filters.min_y_axis}
                 max_y_axis={filters.max_y_axis}
+              />
+            ) : filters.plot === "Density" ? (
+              <IDDensityComponent
+                data={data}
+                var_1_mapped={filters.var_1_mapped}
+                col={filters.col_mapped}
+                isSidebarVisible={isSidebarVisible}
+                mea_med_1={filters.mea_med_1}
+                x_axis={filters.x_axis}
+                min_x_axis={filters.min_x_axis}
+                max_x_axis={filters.max_x_axis}
+                y_axis={filters.y_axis}
+                min_y_axis={filters.min_y_axis}
+                max_y_axis={filters.max_y_axis}
+                bandwidth_divisor={filters.bandwidth_divisor}
               />
             ) : filters.plot === "Map" ? (
               <div

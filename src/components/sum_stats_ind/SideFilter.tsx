@@ -273,6 +273,42 @@ const SideFilter: React.FC<SideFilterProps> = ({
           tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
           bandwidth_divisor: 30,
         };
+      case "Density":
+        return {
+          var_1: "Mean Length (bp)",
+          var_1_mapped: "len_mea",
+          data_1: ["DATA", "PDAT"],
+          data_1_mapped: ["DATA", "PDAT"],
+          reg_1: [
+            "East Asia",
+            "Europe",
+            "South Asia",
+            "Oceania",
+            "Central Asia",
+          ],
+          reg_1_mapped: ["EAS", "EUR", "SAS", "OCE", "CAS"],
+          mpp_1: 0.5,
+          chrms_1: ["Autosome"],
+          chrms_1_mapped: ["A"],
+          ancs_1: ["All"],
+          ancs_1_mapped: ["All"],
+          col: ["Region"],
+          col_mapped: ["reg"],
+          fac_x: [],
+          fac_x_mapped: [],
+          fac_y: ["Dataset"],
+          fac_y_mapped: ["dat"],
+          mea_med_1: true,
+          n_bins: 50,
+          x_axis: "Define Range",
+          min_x_axis: 35000,
+          max_x_axis: 95000,
+          y_axis: "Free Axis",
+          min_y_axis: 0,
+          max_y_axis: 0,
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          bandwidth_divisor: 10,
+        };
       case "Histogram":
         return {
           var_1: "Mean Length (bp)",
@@ -817,7 +853,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     />
                   </Box>
                 )}
-                {filters.plot == "Violin" && (
+                {(filters.plot === "Violin" || filters.plot === "Density") && (
                   <Box
                     sx={{
                       width: "100%",
