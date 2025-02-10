@@ -157,6 +157,17 @@ export const bandwidth_divisor_marks = [
   { value: 100, label: "Light" },
 ];
 
+export const td_bandwidth_divisor_marks = [
+  { value: 1, label: "Detailed" },
+  { value: 50, label: "Smooth" },
+];
+
+
+export const td_threshold_divisor_marks = [
+  { value: 10, label: "Less" },
+  { value: 45, label: "More" },
+];
+
 export const map_jit_marks = [
   { value: 0, label: "0" },
   { value: 1, label: "" },

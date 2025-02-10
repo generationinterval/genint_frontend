@@ -6,6 +6,7 @@ import IDDensityComponent from "@/components/sum_stats_ind/IDDensityComponent";
 import MapComponent from "@/components/sum_stats_ind/MapComponent";
 import PointComponent from "@/components/sum_stats_ind/PointComponent";
 import SideFilter from "@/components/sum_stats_ind/SideFilter";
+import TDDensityComponent from "@/components/sum_stats_ind/TDDensityComponent";
 import ViolinComponent from "@/components/sum_stats_ind/ViolinComponent";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -60,6 +61,7 @@ interface FilterState {
   map_lon_jit: number;
   tree_lin: string[];
   bandwidth_divisor: number;
+  thresholds: number;
 }
 
 export const SummStatInd: React.FC = () => {
@@ -110,6 +112,7 @@ export const SummStatInd: React.FC = () => {
     map_lon_jit: 1,
     tree_lin: [],
     bandwidth_divisor: 30,
+    thresholds: 10,
   });
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
@@ -370,6 +373,24 @@ export const SummStatInd: React.FC = () => {
                 y_axis={filters.y_axis}
                 min_y_axis={filters.min_y_axis}
                 max_y_axis={filters.max_y_axis}
+              />
+            ) : filters.plot === "2D Density" ? (
+              <TDDensityComponent
+                data={data}
+                var_x_mapped={filters.var_2_1_mapped}
+                var_y_mapped={filters.var_2_2_mapped}
+                col={filters.col_mapped}
+                isSidebarVisible={isSidebarVisible}
+                mea_med_x={filters.mea_med_x}
+                mea_med_y={filters.mea_med_y}
+                x_axis={filters.x_axis}
+                min_x_axis={filters.min_x_axis}
+                max_x_axis={filters.max_x_axis}
+                y_axis={filters.y_axis}
+                min_y_axis={filters.min_y_axis}
+                max_y_axis={filters.max_y_axis}
+                bandwidth_divisor={filters.bandwidth_divisor}
+                thresholds={filters.thresholds}
               />
             ) : filters.plot === "Density" ? (
               <IDDensityComponent

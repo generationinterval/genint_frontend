@@ -8,6 +8,8 @@ import {
   map_jit_marks,
   mpp_marks,
   regions,
+  td_bandwidth_divisor_marks,
+  td_threshold_divisor_marks,
   variables
 } from "@/assets/FilterOptions";
 import { icons } from "@/assets/icons"; // Import your icons
@@ -78,6 +80,7 @@ interface FilterState {
   map_lon_jit: number;
   tree_lin: string[];
   bandwidth_divisor: number;
+  thresholds: number;
 }
 
 interface SideFilterProps {
@@ -410,6 +413,46 @@ const SideFilter: React.FC<SideFilterProps> = ({
           max_y_axis: 0,
           tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
         };
+      case "2D Density":
+        return {
+          var_2_1: "Mean Length (bp)",
+          var_2_1_mapped: "len_mea",
+          var_2_2: "Max Length (bp)",
+          var_2_2_mapped: "len_max",
+          data_1: ["DATA", "PDAT"],
+          data_1_mapped: ["DATA", "PDAT"],
+          reg_1: [
+            "East Asia",
+            "Europe",
+            "South Asia",
+            "Oceania",
+            "Central Asia",
+          ],
+          reg_1_mapped: ["EAS", "EUR", "SAS", "OCE", "CAS"],
+          mpp_1: 0.5,
+          chrms_1: ["Autosome"],
+          chrms_1_mapped: ["A"],
+          ancs_1: ["All"],
+          ancs_1_mapped: ["All"],
+          col: [],
+          col_mapped: [],
+          fac_x: [],
+          fac_x_mapped: [],
+          fac_y: [],
+          fac_y_mapped: [],
+          mea_med_x: false,
+          mea_med_y: false,
+          x_axis: "Free Axis",
+          min_x_axis: 0,
+          max_x_axis: 0,
+          y_axis: "Free Axis",
+          min_y_axis: 0,
+          max_y_axis: 0,
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          bandwidth_divisor: 10,
+          thresholds: 10,
+        };
+
 
       default:
         return {};
@@ -868,7 +911,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                       className="contrast-text"
                       sx={{ mt: 0, textAlign: "center" }}
                     >
-                      Violin density
+                      Plot smoothness
                     </Typography>
                     <Slider
                       value={filters.bandwidth_divisor}
@@ -879,6 +922,66 @@ const SideFilter: React.FC<SideFilterProps> = ({
                       marks={bandwidth_divisor_marks}
                       min={1}
                       max={100}
+                      sx={{ width: "85%" }}
+                    />
+                  </Box>
+                )}
+                {(filters.plot === "2D Density") && (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      mb: 1,
+                      mt: 1,
+                    }}
+                  >
+                    <Typography
+                      className="contrast-text"
+                      sx={{ mt: 0, textAlign: "center" }}
+                    >
+                      Plot smoothness
+                    </Typography>
+                    <Slider
+                      value={filters.bandwidth_divisor}
+                      onChange={handleSlider("bandwidth_divisor")}
+                      aria-labelledby="discrete-slider"
+                      valueLabelDisplay="off"
+                      step={1}
+                      marks={td_bandwidth_divisor_marks}
+                      min={1}
+                      max={50}
+                      sx={{ width: "85%" }}
+                    />
+                  </Box>
+                )}
+                {(filters.plot === "2D Density") && (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      mb: 1,
+                      mt: 1,
+                    }}
+                  >
+                    <Typography
+                      className="contrast-text"
+                      sx={{ mt: 0, textAlign: "center" }}
+                    >
+                      Number of steps
+                    </Typography>
+                    <Slider
+                      value={filters.thresholds}
+                      onChange={handleSlider("thresholds")}
+                      aria-labelledby="discrete-slider"
+                      valueLabelDisplay="off"
+                      step={1}
+                      marks={td_threshold_divisor_marks}
+                      min={10}
+                      max={45}
                       sx={{ width: "85%" }}
                     />
                   </Box>

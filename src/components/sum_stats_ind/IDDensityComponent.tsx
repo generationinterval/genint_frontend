@@ -381,7 +381,7 @@ const fullDensity = (
   const uniqueFacY = [...new Set(data.map((d) => d.fac_y))].filter(
     (val) => val !== null
   );
-  console.log(uniqueFacX, uniqueFacY);
+
   // Determine if faceting is needed
   const facetingRequiredX = uniqueFacX.length > 1;
   const facetingRequiredY = uniqueFacY.length > 1;
@@ -446,27 +446,7 @@ const fullDensity = (
       cumulativeWidth += 18 + textWidth + padding; // Update cumulative width with rectangle, text, and padding
     }
   });
-  function getGlobalCategoryOrder(data: DataPoint[], var_x: keyof DataPoint) {
-    // Extract all unique categories from the full dataset
-    const categories = Array.from(
-      new Set(
-        data
-          .map((d) => d[var_x])
-          .filter((value): value is string => value !== null && value !== undefined)
-          .map(String)  // Convert all values to strings
-      )
-    );
 
-    // Sort them alphabetically or in any desired custom order
-    categories.sort();
-
-    return categories;
-  }
-  let globalCategoryOrder: string[] = [];
-
-  if (variables.discreteOptionsShort.includes(var_x)) {
-    globalCategoryOrder = getGlobalCategoryOrder(data, var_x as keyof DataPoint);
-  }
   if (facetingRequiredX && facetingRequiredY) {
     // Apply faceting on both fac_x and fac_y
     uniqueFacX.forEach((facXValue, i) => {
@@ -525,7 +505,7 @@ const fullDensity = (
             ])
             .range([0, plotWidth]);
         }
-        // Since var_x is continuous, we draw a histogram
+
         drawIDDensity(
           facetGroup,
           facetData,
