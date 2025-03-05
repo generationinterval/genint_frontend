@@ -1,7 +1,7 @@
+import theme from "@/theme";
+import { ThemeProvider } from "@mui/material/styles";
 import { BrowserRouter } from "react-router-dom";
 import { AppRouter } from "./router";
-import { ThemeProvider } from "@mui/material/styles";
-import theme from "@/theme";
 
 import "@/responsive.css";
 
