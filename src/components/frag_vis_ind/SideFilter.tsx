@@ -1,27 +1,27 @@
-import React from "react";
-import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import {
   ancestries_noAll,
+  chr_range_marks,
   chrms_all,
-  mpp_marks,
-  variables,
   color_chrms,
   min_chr_len_marks,
-  chr_range_marks,
+  mpp_marks,
+  variables,
 } from "@/assets/FilterOptions";
+import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
+import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
 import {
   Box,
   Button,
+  FormControl,
   Grid,
+  InputLabel,
+  MenuItem,
+  Select,
   Slider,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
-import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
+import React from "react";
 
 interface FilterState {
   tree_lin: string[];
@@ -146,7 +146,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
         <MultipleSelectChip
           sx={{ mb: 1, mt: 1 }}
           options={ancestries_noAll.options}
-          label="Anestries"
+          label="Ancestries"
           selectedValues={filters.ancs}
           onChange={(newValues) =>
             handleMultipleChangeMapped(

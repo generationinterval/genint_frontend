@@ -1,29 +1,28 @@
-import React from "react";
-import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import {
-  ancestries_noAll,
-  chrms_all,
-  mpp_marks,
-  variables,
-  color_chrms,
-  min_chr_len_marks,
   ancestries_frag_vis_reg,
+  ancestries_noAll,
   chr_range_marks,
+  chrms_all,
+  min_chr_len_marks,
+  mpp_marks,
   regions_frag_vis_reg,
   statistic_frag_vis_reg,
+  variables
 } from "@/assets/FilterOptions";
+import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import {
   Box,
   Button,
+  FormControl,
   Grid,
+  InputLabel,
+  MenuItem,
+  Select,
   Slider,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
+import React from "react";
 
 interface FilterState {
   stat: string;
@@ -46,6 +45,7 @@ interface SideFilterProps {
 }
 
 type MappingKey = keyof typeof variables.mappingToShort;
+type MappingAnc = keyof typeof ancestries_noAll.mapping;
 
 const SideFilter: React.FC<SideFilterProps> = ({
   filters,
@@ -56,6 +56,18 @@ const SideFilter: React.FC<SideFilterProps> = ({
     (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
       const value = event.target.value;
       const mappedValue = variables.mappingToShort[value as MappingKey];
+
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [key]: value, // Original value for display
+        [`${key}_mapped`]: mappedValue, // Mapped value for backend
+      }));
+    };
+
+  const handleAncChange =
+    (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
+      const value = event.target.value;
+      const mappedValue = ancestries_noAll.mapping[value as MappingAnc];
 
       setFilters((prevFilters) => ({
         ...prevFilters,
@@ -97,12 +109,12 @@ const SideFilter: React.FC<SideFilterProps> = ({
 
   const handleCheckbox =
     (key: keyof FilterState) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        [key]: event.target.checked,
-      }));
-    };
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          [key]: event.target.checked,
+        }));
+      };
   const handleNumberRangeChange = (
     key: keyof FilterState,
     newValue: number[]
@@ -164,7 +176,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
             id="ancestry_select"
             value={filters.anc} // Bind to the original value for display
             label="Ancestry"
-            onChange={handleSingleMap("anc")}
+            onChange={handleAncChange("anc")}
           >
             {ancestries_frag_vis_reg.options.map((option, index) => (
               <MenuItem key={index} value={option}>
