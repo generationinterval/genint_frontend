@@ -170,8 +170,10 @@ const SideFilter: React.FC<SideFilterProps> = ({
       );
       return;
     }
+
     console.log(selectedValues);
     console.log(selectedDiscrete, selectedContinuous);
+
 
     const disableMeanMedian = selectedContinuous.length > 0;
 
@@ -306,28 +308,37 @@ const SideFilter: React.FC<SideFilterProps> = ({
         };
       case "Density":
         return {
-          var_1: "Mean Length (bp)",
-          var_1_mapped: "len_mea",
+          var_1: "Length",
+          var_1_mapped: "length",
           mpp_1: 0.5,
-          chrms_1: ["Autosome"],
-          chrms_1_mapped: ["A"],
+          chrms_1: [
+            "1",
+            "2",
+            "3",
+            "4",
+          ],
+          chrms_1_mapped: [
+            "1",
+            "2",
+            "3",
+            "4",
+          ],
           ancs_1: ["All"],
           ancs_1_mapped: ["All"],
-          col: ["Region"],
-          col_mapped: ["reg"],
+          col: ["Chromosome"],
+          col_mapped: ["chrom"],
           fac_x: [],
           fac_x_mapped: [],
-          fac_y: ["Dataset"],
-          fac_y_mapped: ["dat"],
+          fac_y: ["Individual"],
+          fac_y_mapped: ["ind"],
           mea_med_1: true,
-          n_bins: 50,
-          x_axis: "Define Range",
+          x_axis: "Shared Axis",
           min_x_axis: 35000,
           max_x_axis: 95000,
           y_axis: "Free Axis",
           min_y_axis: 0,
           max_y_axis: 0,
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP", "PH_AytaMB-02_AYTA"],
           bandwidth_divisor: 10,
         };
       case "Histogram":
@@ -405,44 +416,17 @@ const SideFilter: React.FC<SideFilterProps> = ({
         };
       case "Points":
         return {
-          var_2_1: "Mean Length (bp)",
-          var_2_1_mapped: "len_mea",
-          var_2_2: "Max Length (bp)",
-          var_2_2_mapped: "len_max",
+          var_2_1: "Length",
+          var_2_1_mapped: "length",
+          var_2_2: "SNPs",
+          var_2_2_mapped: "snps",
           mpp_1: 0.5,
-          chrms_1: ["Autosome"],
-          chrms_1_mapped: ["A"],
+          chrms_1: ["1", "2", "3", "4"],
+          chrms_1_mapped: ["1", "2", "3", "4"],
           ancs_1: ["All"],
           ancs_1_mapped: ["All"],
-          col: ["Region"],
-          col_mapped: ["reg"],
-          fac_x: ["Dataset"],
-          fac_x_mapped: ["dat"],
-          fac_y: [],
-          fac_y_mapped: [],
-          mea_med_x: false,
-          mea_med_y: false,
-          x_axis: "Free Axis",
-          min_x_axis: 0,
-          max_x_axis: 0,
-          y_axis: "Free Axis",
-          min_y_axis: 0,
-          max_y_axis: 0,
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
-        };
-      case "2D Density":
-        return {
-          var_2_1: "Mean Length (bp)",
-          var_2_1_mapped: "len_mea",
-          var_2_2: "Max Length (bp)",
-          var_2_2_mapped: "len_max",
-          mpp_1: 0.5,
-          chrms_1: ["Autosome"],
-          chrms_1_mapped: ["A"],
-          ancs_1: ["All"],
-          ancs_1_mapped: ["All"],
-          col: [],
-          col_mapped: [],
+          col: ["Individual", "Haploidy"],
+          col_mapped: ["ind", "hap"],
           fac_x: [],
           fac_x_mapped: [],
           fac_y: [],
@@ -455,7 +439,34 @@ const SideFilter: React.FC<SideFilterProps> = ({
           y_axis: "Free Axis",
           min_y_axis: 0,
           max_y_axis: 0,
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP", "PH_AytaMB-02_AYTA"],
+        };
+      case "2D Density":
+        return {
+          var_2_1: "Length",
+          var_2_1_mapped: "length",
+          var_2_2: "SNPs",
+          var_2_2_mapped: "snps",
+          mpp_1: 0.5,
+          chrms_1: ["1", "2", "3", "4"],
+          chrms_1_mapped: ["1", "2", "3", "4"],
+          ancs_1: ["All"],
+          ancs_1_mapped: ["All"],
+          col: [],
+          col_mapped: [],
+          fac_x: [],
+          fac_x_mapped: [],
+          fac_y: [],
+          fac_y_mapped: [],
+          mea_med_x: false,
+          mea_med_y: false,
+          x_axis: "Define Range",
+          min_x_axis: -5000,
+          max_x_axis: 200000,
+          y_axis: "Define Range",
+          min_y_axis: -10,
+          max_y_axis: 50,
+          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP", "PH_AytaMB-02_AYTA"],
           bandwidth_divisor: 10,
           thresholds: 10,
         };
@@ -572,6 +583,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           />
         </Grid>
       </>
+
       <Grid item xs={12}>
         <Grid container spacing={1}>
           {tabValue === 0 && (
@@ -631,12 +643,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     label="Plot Types"
                     onChange={handleSingleMap("var_2_1")}
                   >
-                    {(filters.plot === "Points"
-                      ? variables.continuousOptions
-                      : filters.plot === "placeholder"
-                        ? variables.discreteOptions
-                        : variables.options_all
-                    ).map((option, index) => (
+                    {variables.continuousOptions.map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
                       </MenuItem>
@@ -675,12 +682,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     label="Plot Types"
                     onChange={handleSingleMap("var_2_2")}
                   >
-                    {(filters.plot === "Points"
-                      ? variables.continuousOptions
-                      : filters.plot === "placeholder"
-                        ? variables.discreteOptions
-                        : variables.options_all
-                    ).map((option, index) => (
+                    {variables.continuousOptions.map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
                       </MenuItem>

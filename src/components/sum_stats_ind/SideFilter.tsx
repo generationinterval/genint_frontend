@@ -302,7 +302,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           fac_y: ["Dataset"],
           fac_y_mapped: ["dat"],
           mea_med_1: true,
-          n_bins: 50,
+          /* n_bins: 50, */
           x_axis: "Define Range",
           min_x_axis: 35000,
           max_x_axis: 95000,
@@ -624,12 +624,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     label="Plot Types"
                     onChange={handleSingleMap("var_2_1")}
                   >
-                    {(filters.plot === "Points"
-                      ? variables.continuousOptions
-                      : filters.plot === "placeholder"
-                        ? variables.discreteOptions
-                        : variables.options_all
-                    ).map((option, index) => (
+                    {variables.continuousOptions.map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
                       </MenuItem>
@@ -668,12 +663,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     label="Plot Types"
                     onChange={handleSingleMap("var_2_2")}
                   >
-                    {(filters.plot === "Points"
-                      ? variables.continuousOptions
-                      : filters.plot === "placeholder"
-                        ? variables.discreteOptions
-                        : variables.options_all
-                    ).map((option, index) => (
+                    {variables.continuousOptions.map((option, index) => (
                       <MenuItem key={index} value={option}>
                         {option}
                       </MenuItem>

@@ -114,6 +114,7 @@ export const SummStatFrag: React.FC = () => {
           facet_x: filters.fac_x_mapped,
           facet_y: filters.fac_y_mapped,
           color: filters.col_mapped,
+          chrms: filters.chrms_1_mapped,
         }),
       });
 
