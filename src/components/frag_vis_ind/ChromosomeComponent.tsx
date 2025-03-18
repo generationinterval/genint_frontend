@@ -1,7 +1,6 @@
-import React, { useRef, useEffect } from "react";
-import * as d3 from "d3";
-import { variables } from "@/assets/FilterOptions";
 import { chrlen } from "@/assets/StaticData";
+import * as d3 from "d3";
+import React, { useEffect, useRef } from "react";
 
 export interface DataPoint {
   alt: number; // 1
@@ -96,7 +95,6 @@ const ChromosomeComponent: React.FC<ChromosomeProps> = ({
     window.addEventListener("resize", handleResize);
     // Run resize handler once to set initial sizes
     handleResize();
-    console.log(data, chrms, chrms_limits, mpp, min_length, color);
     // Cleanup event listener on component unmount
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -131,6 +129,7 @@ const plotChromosomes = (
   min_length: number,
   color: string
 ) => {
+
   d3.select(svgElement).selectAll("*").remove();
   const container = svgElement.parentElement;
   d3.select(container).selectAll(".tooltip").remove();
@@ -233,7 +232,13 @@ const plotChromosomes = (
   const chrmsCount = chrms.length;
   const chrPadding = 10; // Padding between chromosomes
   const chrHeight = (plotHeight - (chrmsCount - 1) * chrPadding) / chrmsCount; // Space per chromosome minus padding
-  const partitionHeight = chrHeight / lin.length;
+  // Compute unique lin_hap combinations
+  const uniqueLinHap = Array.from(
+    new Set(data.map(d => `${d.lin}-${d.hap}`))
+  );
+
+  // Adjust loop and partitionHeight
+  const partitionHeight = chrHeight / uniqueLinHap.length;
 
   let colorScaleDiscrete: d3.ScaleOrdinal<string, string> | null = null;
   let colorScaleContinous: ((value: number) => string) | null = null;
@@ -290,20 +295,22 @@ const plotChromosomes = (
     });
 
     // For each individual, draw their respective rectangle
-    lin.forEach((linValue, linIndex) => {
+    uniqueLinHap.forEach((linHapValue, linHapIndex) => {
+      const [linValue, hapValueString] = linHapValue.split('-'); // Extract values
+      const hapValue: number = Number(hapValueString); // Ensure hapValue is a number
       // Filter data for the individual
       const individualData = chromData.filter(
         (d) =>
           d.lin === linValue &&
+          d.hap === hapValue &&
           d.mean_prob >= mpp && // Filter based on mean_prob
           d.length >= min_length * 1000 && // Filter based on length
           d.start >= chrms_limits[0] * 1000
       );
-
       individualData.forEach((d) => {
         const startX = xScale(d.start);
         const endX = xScale(d.end);
-        const indYPos = yPos + linIndex * partitionHeight;
+        const indYPos = yPos + linHapIndex * partitionHeight;
 
         let fillColor: string = "black"; // Default fallback color
 
