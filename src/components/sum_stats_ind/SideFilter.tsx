@@ -94,7 +94,7 @@ interface SideFilterProps {
 type MappingKey = keyof typeof variables.mappingToShort;
 
 const plotOptionsSingle = ["Violin", "Histogram", "Density", "Map"];
-const plotOptionsDouble = ["Points", "2D Density", "Quantiles"];
+const plotOptionsDouble = ["Points", "2D Density"];
 
 const SideFilter: React.FC<SideFilterProps> = ({
   tabValue,
