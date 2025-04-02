@@ -12,10 +12,11 @@ import {
   td_threshold_divisor_marks,
   variables
 } from "@/assets/FilterOptions";
-import { icons } from "@/assets/icons"; // Import your icons
+import { icons } from "@/assets/icons";
 import { checkboxBoxStyles } from "@/assets/styles";
 import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
+import { FilterState, mappingToShort } from "@/components/sum_stats_ind/ssiStatic";
 import {
   Box,
   Button,
@@ -36,52 +37,6 @@ import { SelectChangeEvent } from "@mui/material/Select";
 import React from "react";
 import "./SideFilter.css";
 
-interface FilterState {
-  var_1: string;
-  var_1_mapped: string;
-  data_1: string[];
-  data_1_mapped: string[];
-  reg_1: string[];
-  reg_1_mapped: string[];
-  mpp_1: number;
-  chrms_1: string[];
-  chrms_1_mapped: string[];
-  ancs_1: string[];
-  ancs_1_mapped: string[];
-  var_2_1: string;
-  var_2_1_mapped: string;
-  var_2_2: string;
-  var_2_2_mapped: string;
-  col: string[];
-  col_mapped: string[];
-  fac_x: string[];
-  fac_x_mapped: string[];
-  fac_y: string[];
-  fac_y_mapped: string[];
-  mea_med_1: boolean;
-  mea_med_x: boolean;
-  mea_med_y: boolean;
-  plot: string;
-  n_bins: number;
-  x_axis: string;
-  min_x_axis: number;
-  max_x_axis: number;
-  y_axis: string;
-  min_y_axis: number;
-  max_y_axis: number;
-  map_data: boolean;
-  map_data_rad: number;
-  map_reg: boolean;
-  map_reg_rad: number;
-  map_pop: boolean;
-  map_pop_rad: number;
-  map_ind_rad: number;
-  map_lat_jit: number;
-  map_lon_jit: number;
-  tree_lin: string[];
-  bandwidth_divisor: number;
-  thresholds: number;
-}
 
 interface SideFilterProps {
   tabValue: number;
@@ -91,7 +46,7 @@ interface SideFilterProps {
   applyFilters: () => Promise<void>;
 }
 
-type MappingKey = keyof typeof variables.mappingToShort;
+type MappingKey = keyof typeof mappingToShort;
 
 const plotOptionsSingle = ["Violin", "Histogram", "Density", "Map"];
 const plotOptionsDouble = ["Points", "2D Density"];
@@ -109,7 +64,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
   const handleSingleMap =
     (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
       const value = event.target.value;
-      const mappedValue = variables.mappingToShort[value as MappingKey];
+      const mappedValue = mappingToShort[value as MappingKey];
 
       setFilters((prevFilters) => ({
         ...prevFilters,
@@ -131,7 +86,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
   const handleMultiMap =
     (key: keyof FilterState) => (selectedValues: string[]) => {
       const mappedValues = selectedValues.map(
-        (v) => variables.mappingToShort[v as MappingKey]
+        (v) => mappingToShort[v as MappingKey]
       );
 
       setFilters((prevFilters) => ({
@@ -160,17 +115,17 @@ const SideFilter: React.FC<SideFilterProps> = ({
 
   const handleColor = (selectedValues: string[]) => {
     const mappedValues = selectedValues.map(
-      (v) => variables.mappingToShort[v as MappingKey]
+      (v) => mappingToShort[v as MappingKey]
     );
 
     const selectedDiscrete = mappedValues.filter((v) =>
       variables.discreteOptions
-        .map((option) => variables.mappingToShort[option as MappingKey])
+        .map((option) => mappingToShort[option as MappingKey])
         .includes(v)
     );
     const selectedContinuous = mappedValues.filter((v) =>
       variables.continuousOptions
-        .map((option) => variables.mappingToShort[option as MappingKey])
+        .map((option) => mappingToShort[option as MappingKey])
         .includes(v)
     );
 
@@ -199,18 +154,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
   };
 
   const options = tabValue === 0 ? plotOptionsSingle : plotOptionsDouble;
-  /* 
-    const handlePlotType = (event: SelectChangeEvent<string>) => {
-      const value = event.target.value;
-      const defaultValues = getDefaultValuesForPlot(value);
-  
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        plot: value,
-        ...defaultValues,
-      }));
-    };
-     */
+
   const handleNumberInput =
     (key: keyof FilterState) =>
       (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
