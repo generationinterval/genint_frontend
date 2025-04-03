@@ -1,18 +1,8 @@
-import React, { useRef, useEffect } from "react";
-import * as d3 from "d3";
-import { variables } from "@/assets/FilterOptions";
+import { reg_cmaps } from "@/assets/colormaps";
 import { chrlen } from "@/assets/StaticData";
-import { stat } from "fs";
-
-export interface DataPoint {
-  chrom: string;
-  start: number;
-  end: number;
-  reg: string;
-  numind?: number;
-  freq?: number;
-  column_6?: number;
-}
+import { DataPoint, mappingToLong } from "@/components/frag_vis_reg/fvrStatic";
+import * as d3 from "d3";
+import React, { useEffect, useRef } from "react";
 
 type ChromosomeProps = {
   data: any[];
@@ -24,8 +14,6 @@ type ChromosomeProps = {
   chrms_limits: [number, number];
   min_length: number;
 };
-
-type MappingKey = keyof typeof variables.mappingToLong;
 
 const ChromosomeComponent: React.FC<ChromosomeProps> = ({
   data,
@@ -90,11 +78,7 @@ const ChromosomeComponent: React.FC<ChromosomeProps> = ({
   }, [isSidebarVisible]);
 
   return (
-    <div
-      id="chromosome-container"
-      ref={containerRef}
-      style={{ width: "100%", height: "100%", position: "relative" }}
-    >
+    <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
       <svg id="chromplot" ref={svgRef} />
     </div>
   );
@@ -114,18 +98,17 @@ const plotChromosomes = (
   d3.select(svgElement).selectAll("*").remove();
   const container = svgElement.parentElement;
   d3.select(container).selectAll(".tooltip").remove();
-  const containerMargin = { top: 0, right: 0, bottom: 0, left: -10 };
-  const plotMargin = { top: 20, right: -30, bottom: 90, left: 75 };
+  const margin = { top: 0, right: 0, bottom: 0, left: 30 };
   const width = container
-    ? container.clientWidth - containerMargin.left - containerMargin.right
+    ? container.clientWidth - margin.left - margin.right
     : 960;
   const height = container
-    ? container.clientHeight - containerMargin.top - containerMargin.bottom
+    ? container.clientHeight - margin.top - margin.bottom
     : 600;
 
-  const plotHeight = height - plotMargin.top - plotMargin.bottom;
+  const plotWidth = width * 0.95;
+  const plotHeight = height * 0.95;
 
-  const plotWidth = width - plotMargin.left - plotMargin.right;
   const tooltip = d3.select(container).append("div").attr("class", "tooltip");
 
   function handleMouseOver(event: any, d: DataPoint, stat: string) {
@@ -141,6 +124,7 @@ const plotChromosomes = (
           <strong>Start:</strong> ${d.start}<br/>
           <strong>End:</strong> ${d.end}<br/>
           <strong>Length:</strong> ${d.end - d.start}<br/>
+          <strong>Individuals with Archaic:</strong> ${d.pres_numind}<br/>
           <strong>Number of Individuals:</strong> ${d.numind}<br/>
           <strong>Frequency:</strong> ${d.freq}<br/>
         `
@@ -156,7 +140,6 @@ const plotChromosomes = (
       .style("left", mouseX + 10 + "px")
       .style("top", mouseY - 28 + "px");
   }
-
   function handleMouseMove(event: any, d: DataPoint) {
     const [mouseX, mouseY] = d3.pointer(event, container);
     tooltip.style("left", mouseX + 10 + "px").style("top", mouseY - 28 + "px");
@@ -191,27 +174,36 @@ const plotChromosomes = (
     .attr("width", width)
     .attr("height", height)
     .append("g")
-    .attr("transform", `translate(${plotMargin.left},${plotMargin.top})`);
+    .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  const maxChromLength = Math.max(
-    ...orderedChrms.map((chrom) => chrlen[chrom] || min_length)
-  );
 
   const xScale = d3
     .scaleLinear()
     .domain([chrms_limits[0] * 1000, chrms_limits[1] * 1000])
-    .range([0, plotWidth * 0.95]);
-
+    .range([0, plotWidth]);
   const chrmsCount = chrms.length;
   const chrPadding = 10; // Padding between chromosomes
   const chrHeight = (plotHeight - (chrmsCount - 1) * chrPadding) / chrmsCount; // Space per chromosome minus padding
   const partitionHeight = chrHeight / regs.length;
 
-  let colorScaleDiscrete: d3.ScaleOrdinal<string, string> | null = null;
+  const colorScaleDiscrete: d3.ScaleOrdinal<string, string> = d3
+    .scaleOrdinal<string>()
+    .domain(Object.keys(reg_cmaps))
+    .range(Object.values(reg_cmaps));
 
-  colorScaleDiscrete = d3
-    .scaleOrdinal<string>(d3.schemeCategory10)
-    .domain(regs);
+  // First, filter to ensure we only work with defined frequency values.
+  const freqData = data.filter((d) => d.freq !== undefined) as DataPoint[];
+  const minFreq = d3.min(freqData, (d) => d.freq)!;
+  const maxFreq = d3.max(freqData, (d) => d.freq)!;
+
+  // Use a power scale with an exponent less than 1 to boost lower values.
+  // Here, we also set a minimum opacity (e.g., 0.2) to ensure that even the lowest frequency
+  // gets some color, and maximum opacity is 1.
+  const opacityScale = d3
+    .scalePow()
+    .exponent(0.5) // You can adjust this exponent to control the boost of low values.
+    .domain([minFreq, maxFreq])
+    .range([0.1, 1]);
 
   // Draw chromosomes
   orderedChrms.forEach((chrom, index) => {
@@ -258,9 +250,11 @@ const plotChromosomes = (
         const endX = xScale(d.end);
         const indYPos = yPos + regIndex * partitionHeight;
 
-        let fillColor: string = "black"; // Default fallback color
+        const fillColor = colorScaleDiscrete(d.reg);
+        // Use d.freq as a number since we assume it's defined when stat === "freq"
+        const opacityValue =
+          stat === "freq" && opacityScale ? opacityScale(d.freq as number) : 1;
 
-        fillColor = colorScaleDiscrete(d.reg);
 
         svg
           .append("rect")
@@ -269,6 +263,7 @@ const plotChromosomes = (
           .attr("width", endX - startX)
           .attr("height", partitionHeight)
           .attr("fill", fillColor)
+          .attr("fill-opacity", opacityValue)
           .on("mouseover", (event) => handleMouseOver(event, d, stat))
           .on("mousemove", (event) => handleMouseMove(event, d))
           .on("mouseout", (event) => handleMouseOut(event, d));
@@ -278,41 +273,45 @@ const plotChromosomes = (
 
   svg
     .append("g")
-    .attr("transform", `translate(0,${plotHeight})`)
+    .attr("transform", `translate(0,${height})`)
     .call(d3.axisBottom(xScale));
   // Legend (for the bottom-center part)
   // Legend (for the bottom-center part)
-  const legendHeight = 50; // Height of the legend area
-  const legendY = plotHeight + plotMargin.bottom - legendHeight; // Position the legend vertically at the bottom
+  const legendHeight = 25; // Height of the legend area
+  const legendY = height - legendHeight; // Position the legend vertically at the bottom
 
-  const legend = svg.append("g").attr("transform", `translate(0,${legendY})`); // Initial Y translation for legend
-
+  const padding = 30;
+  let cumulativeWidth = 0;
   const keys = regs;
-  const legendItemWidth = 125;
-  // Width per item, including spacing
-  const totalLegendWidth = keys.length * legendItemWidth; // Total width of all legend items
-  const legendX = (plotWidth - totalLegendWidth) / 2; // Calculate X position to center the legend
-
-  legend.attr("transform", `translate(${legendX},${legendY})`); // Adjust legend X and Y position
+  const legend = svg.append("g").attr(
+    "transform",
+    `translate(0, ${legendY})` // Start legend at the leftmost point of the container
+  );
 
   keys.forEach((key, i) => {
     legend
       .append("rect")
-      .attr("x", i * legendItemWidth) // Position horizontally
-      .attr("y", 0) // Keep y the same to align all items in one row
+      .attr("x", cumulativeWidth)
+      .attr("y", 0)
       .attr("width", 18)
       .attr("height", 18)
       .style(
         "fill",
         colorScaleDiscrete ? (colorScaleDiscrete(key) as string) : "black"
       );
-
-    legend
+    // Append text label
+    const text = legend
       .append("text")
-      .attr("x", i * legendItemWidth + 24) // Position text next to the rectangle
-      .attr("y", 9) // Align text vertically with the rectangles
-      .attr("dy", "0.35em")
-      .style("text-anchor", "start")
-      .text(variables.mappingToLong[key as MappingKey]);
+      .attr("x", cumulativeWidth + 24) // Position text next to the rectangle
+      .attr("y", 9) // Center text vertically with the rectangle
+      .attr("dy", ".35em")
+      .text(mappingToLong[key as keyof typeof mappingToLong]);
+
+    const textNode = text.node();
+    if (textNode) {
+      const textWidth = textNode.getBBox().width;
+      cumulativeWidth += 18 + textWidth + padding; // Update cumulative width with rectangle, text, and padding
+    }
+
   });
 };

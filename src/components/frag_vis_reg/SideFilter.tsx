@@ -1,14 +1,9 @@
 import {
-  ancestries_frag_vis_reg,
-  ancestries_noAll,
   chr_range_marks,
-  chrms_all,
   min_chr_len_marks,
-  mpp_marks,
-  regions_frag_vis_reg,
-  statistic_frag_vis_reg,
-  variables
+  mpp_marks
 } from "@/assets/FilterOptions";
+import { FilterState, mappingToShort, variables, } from "@/components/frag_vis_reg/fvrStatic";
 import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import {
   Box,
@@ -24,19 +19,6 @@ import {
 import { SelectChangeEvent } from "@mui/material/Select";
 import React from "react";
 
-interface FilterState {
-  stat: string;
-  stat_mapped: string;
-  regs: string[];
-  regs_mapped: string[];
-  chrms: string[];
-  chrms_mapped: string[];
-  anc: string;
-  anc_mapped: string;
-  mpp: number;
-  chrms_limits: [number, number];
-  min_length: number;
-}
 
 interface SideFilterProps {
   filters: FilterState; // Use your FilterState type here
@@ -44,8 +26,6 @@ interface SideFilterProps {
   applyFilters: () => Promise<void>;
 }
 
-type MappingKey = keyof typeof variables.mappingToShort;
-type MappingAnc = keyof typeof ancestries_noAll.mapping;
 
 const SideFilter: React.FC<SideFilterProps> = ({
   filters,
@@ -55,7 +35,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
   const handleSingleMap =
     (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
       const value = event.target.value;
-      const mappedValue = variables.mappingToShort[value as MappingKey];
+      const mappedValue = mappingToShort[value as keyof typeof mappingToShort];
 
       setFilters((prevFilters) => ({
         ...prevFilters,
@@ -67,7 +47,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
   const handleAncChange =
     (key: keyof FilterState) => (event: SelectChangeEvent<string>) => {
       const value = event.target.value;
-      const mappedValue = ancestries_noAll.mapping[value as MappingAnc];
+      const mappedValue = mappingToShort[value as keyof typeof mappingToShort];;
 
       setFilters((prevFilters) => ({
         ...prevFilters,
@@ -89,7 +69,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
   const handleMultiMap =
     (key: keyof FilterState) => (selectedValues: string[]) => {
       const mappedValues = selectedValues.map(
-        (v) => variables.mappingToShort[v as MappingKey]
+        (v) => mappingToShort[v as keyof typeof mappingToShort]
       );
 
       setFilters((prevFilters) => ({
@@ -148,7 +128,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
             label="Statistic"
             onChange={handleSingleMap("stat")}
           >
-            {statistic_frag_vis_reg.options.map((option, index) => (
+            {variables.statistic.map((option, index) => (
               <MenuItem key={index} value={option}>
                 {option}
               </MenuItem>
@@ -157,14 +137,14 @@ const SideFilter: React.FC<SideFilterProps> = ({
         </FormControl>
         <MultipleSelectChip
           sx={{ mb: 1, mt: 1 }}
-          options={regions_frag_vis_reg.options}
+          options={variables.regions}
           label="Regions"
           selectedValues={filters.regs}
           onChange={handleMultiMap("regs")}
         />
         <MultipleSelectChip
           sx={{ mb: 1, mt: 1 }}
-          options={chrms_all.options}
+          options={variables.chrms}
           label="Chromosomes"
           selectedValues={filters.chrms}
           onChange={handleMultiMap("chrms")}
@@ -178,7 +158,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
             label="Ancestry"
             onChange={handleAncChange("anc")}
           >
-            {ancestries_frag_vis_reg.options.map((option, index) => (
+            {variables.anc.map((option, index) => (
               <MenuItem key={index} value={option}>
                 {option}
               </MenuItem>

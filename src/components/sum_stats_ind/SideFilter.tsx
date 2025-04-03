@@ -4,7 +4,6 @@ import {
   bandwidth_divisor_marks,
   bin_marks,
   chrms_discrete,
-  datasets,
   map_jit_marks,
   mpp_marks,
   regions,
@@ -16,7 +15,7 @@ import { icons } from "@/assets/icons";
 import { checkboxBoxStyles } from "@/assets/styles";
 import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
-import { FilterState, mappingToShort } from "@/components/sum_stats_ind/ssiStatic";
+import { datasets, FilterState, mappingToShort } from "@/components/sum_stats_ind/ssiStatic";
 import {
   Box,
   Button,

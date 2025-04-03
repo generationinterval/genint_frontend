@@ -1,17 +1,17 @@
-import React, { useState, useRef } from "react";
+import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
+import { paths } from "@/paths";
 import {
   AppBar,
   Box,
+  MenuItem,
+  MenuList,
+  Paper,
+  Popper,
   Stack,
   Toolbar,
   Typography,
-  Popper,
-  Paper,
-  MenuList,
-  MenuItem,
 } from "@mui/material";
-import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
-import { paths } from "@/paths";
+import React, { useRef, useState } from "react";
 
 export const NavBar: React.FC = () => {
   const { isSidebarVisible, toggleSidebar } = useSidebar();
@@ -53,7 +53,7 @@ export const NavBar: React.FC = () => {
     <Box
       sx={{
         flexGrow: 1,
-        height: "7dvh",
+        height: "10dvh",
         minHeight: "70.85px", // Set Box height explicitly
       }}
     >

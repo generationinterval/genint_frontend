@@ -1,47 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Grid } from "@mui/material";
-import SideFilter from "@/components/frag_vis_reg/SideFilter";
-import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
-import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
-import {
-  ancestries_noAll,
-  chrms_all,
-  regions_frag_vis_reg,
-  mpp_marks,
-  variables,
-  color_chrms,
-  min_chr_len_marks,
-  chr_range_marks,
-} from "@/assets/FilterOptions";
 import ChromosomeComponent from "@/components/frag_vis_reg/ChromosomeComponent";
+import { DataPoint, FilterState, variables } from "@/components/frag_vis_reg/fvrStatic";
+import SideFilter from "@/components/frag_vis_reg/SideFilter";
+import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
+import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
+import { Grid } from "@mui/material";
+import React, { useEffect, useRef, useState } from "react";
 
-interface FilterState {
-  stat: string;
-  stat_mapped: string;
-  regs: string[];
-  regs_mapped: string[];
-  chrms: string[];
-  chrms_mapped: string[];
-  anc: string;
-  anc_mapped: string;
-  mpp: number;
-  chrms_limits: [number, number];
-  min_length: number;
-}
 
-interface DataPoint {
-  chrom: string;
-  start: number;
-  end: number;
-  reg: string;
-  numind?: number;
-  freq?: number;
-  column_6?: number;
-}
-
-const defaultStat = "Joined";
-const defaultRegs = regions_frag_vis_reg.options;
-const defaultChrms = chrms_all.options;
+const defaultStat = "Frequency";
+const defaultRegs = variables.regions;
+const defaultChrms = variables.chrms;
 const defaultAnc = "All";
 const defaultMpp = 0.5;
 const defaultChrmsLimits: [number, number] = [0, 250000];
@@ -51,7 +19,7 @@ export const FragVisReg: React.FC = () => {
   const { isSidebarVisible } = useSidebar();
   const [filters, setFilters] = useState<FilterState>({
     stat: defaultStat,
-    stat_mapped: "joined",
+    stat_mapped: "freq",
     regs: defaultRegs,
     regs_mapped: ["EUR", "MID", "SAS", "CAS", "EAS", "AMR", "OCE", "GLOB"],
     chrms: defaultChrms,
@@ -141,79 +109,96 @@ export const FragVisReg: React.FC = () => {
   }, []);
 
   return (
-    <Grid container spacing={2} style={{ height: "100vh", overflow: "hidden" }}>
-      {isSidebarVisible && (
-        <Grid
-          item
-          xs={12}
-          sm={4}
-          md={3}
-          lg={3}
-          style={{
-            height: "90vh",
-            padding: "10px",
-            display: "flex",
-            flexDirection: "column",
-            overflowY: "auto",
-          }}
-        >
-          <SideFilter
-            filters={filters} // Pass the full filters object here
-            setFilters={setFilters} // Pass the setFilters function
-            applyFilters={applyFilters}
-          />
-        </Grid>
-      )}
-
-      <Grid
-        item
-        xs={12}
-        sm={isSidebarVisible ? 8 : 12}
-        md={isSidebarVisible ? 9 : 12}
-        lg={isSidebarVisible ? 9 : 12}
-        style={{ height: "100%", padding: "10px", display: "flex" }}
-      >
-        {loading && <div>Loading...</div>} {/* Show a loading indicator */}
-        {!loading && isFiltersApplied && data.length > 0 && (
+    <div
+      style={{
+        position: "absolute",
+        height: "100vh",
+        width: "100vw",
+        paddingTop: "9vh",
+        overflowY: "hidden", // Prevent scrolling in the main container
+      }}
+    >
+      <Grid container spacing={2} style={{ height: "100%" }}>
+        {isSidebarVisible && (
           <Grid
             item
             xs={12}
-            className="plot-container"
-            ref={plotRef}
+            sm={4}
+            md={3}
+            lg={2}
             style={{
-              width: "100%",
-              height: "100%",
-              flexGrow: 1,
-              position: "relative",
-            }} // Ensure the container is relatively positioned
+              height: "100%", // Ensure it takes the parent's full height
+              padding: "10px",
+              display: "flex",
+              flexDirection: "column",
+              overflowY: "auto", // Allow vertical scrolling for the sidebar only
+              paddingLeft: "20px",
+            }}
           >
-            <ChromosomeComponent
-              data={data}
-              stat={filters.stat_mapped}
-              isSidebarVisible={isSidebarVisible}
-              chrms={filters.chrms}
-              regs={filters.regs_mapped}
-              anc={filters.anc_mapped}
-              chrms_limits={filters.chrms_limits}
-              min_length={filters.min_length}
+            <SideFilter
+              filters={filters} // Pass the full filters object here
+              setFilters={setFilters} // Pass the setFilters function
+              applyFilters={applyFilters}
             />
-            <div
-              style={{
-                position: "absolute",
-                bottom: "10px",
-                left: "10px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-                width: "10%",
-              }}
-            >
-              <PlotDownloadButton plotRef={plotRef} fileName="plot" />
-            </div>
           </Grid>
         )}
-        {!loading && !isFiltersApplied && <div>No data to display yet.</div>}
+
+        <Grid
+          item
+          xs={12}
+          sm={isSidebarVisible ? 8 : 12}
+          md={isSidebarVisible ? 9 : 12}
+          lg={isSidebarVisible ? 10 : 12}
+          style={{
+            height: "100%",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+            overflow: "hidden", // Prevent scrolling in the plot area
+
+          }}
+        >
+          {loading && <div>Loading...</div>} {/* Show a loading indicator */}
+          {!loading && isFiltersApplied && data.length > 0 && (
+            <Grid
+              item
+              xs={12}
+              className="plot-container"
+              ref={plotRef}
+              style={{
+                position: "relative",
+                overflow: "hidden",
+              }} // Ensure the container is relatively positioned
+            >
+              <ChromosomeComponent
+                data={data}
+                stat={filters.stat_mapped}
+                isSidebarVisible={isSidebarVisible}
+                chrms={filters.chrms}
+                regs={filters.regs_mapped}
+                anc={filters.anc_mapped}
+                chrms_limits={filters.chrms_limits}
+                min_length={filters.min_length}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "10px",
+                  right: "45px", // Position in the lower right corner
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: "5px", // Reduce the gap between the buttons
+                  width: "auto", // Adjust width to fit the buttons
+                }}
+              >
+                <PlotDownloadButton plotRef={plotRef} fileName="plot" />
+              </div>
+            </Grid>
+          )}
+          {!loading && !isFiltersApplied && <div>No data to display yet.</div>}
+        </Grid>
       </Grid>
-    </Grid>
+    </div>
   );
 };

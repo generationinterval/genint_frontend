@@ -1,37 +1,3 @@
-
-export const datasets = {
-  options: [
-    "DATA",
-    "PDAT",
-    "GNOM",
-    "PGNO",
-    "GENI",
-    "PGEN",
-    "1KGP",
-    "HGDP",
-    "SGDP",
-    "VANU",
-    "IGDP",
-    "AYTA",
-    "OFAR",
-  ],
-  mapping: {
-    DATA: "DATA",
-    PDAT: "PDAT",
-    GNOM: "GNOM",
-    PGNO: "PGNO",
-    GENI: "GENI",
-    PGEN: "PGEN",
-    "1KGP": "1KGP",
-    HGDP: "HGDP",
-    SGDP: "SGDP",
-    VANU: "VANU",
-    IGDP: "IGDP",
-    AYTA: "AYTA",
-    OFAR: "OFAR",
-  },
-};
-
 export const chrms_discrete = {
   options: ["Autosome", "X", "X Prime"],
   mapping: {
