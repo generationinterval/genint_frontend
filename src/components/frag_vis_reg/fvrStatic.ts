@@ -27,7 +27,7 @@ export interface FilterState {
 export const variables = {
   statistic: ["Joined", "Frequency", "Shared", "Private"],
   regions: ["Europe",
-    "MID",
+    "Middle East",
     "South Asia",
     "Central Asia",
     "East Asia",
@@ -91,7 +91,7 @@ export const mappingToShort = {
   Neanderthal: "Neanderthal",
   "Non DAVC": "nonDAVC",
   Europe: "EUR",
-  MID: "MID",
+  "Middle East": "MID",
   "South Asia": "SAS",
   "East Asia": "EAS",
   America: "AMR",
@@ -106,7 +106,7 @@ export const mappingToShort = {
 
 export const mappingToLong = {
   EUR: "Europe",
-  MID: "MID",
+  MID: "Middle East",
   SAS: "South Asia",
   AFR: "Africa",
   EAS: "East Asia",

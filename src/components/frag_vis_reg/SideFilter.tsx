@@ -116,7 +116,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
   return (
     <Grid container spacing={2}>
       <Grid item xs={12}>
-        <Typography variant="h5">1- Select Statistic:</Typography>
+        <Typography variant="h5">1- Data filters:</Typography>
       </Grid>
       <Grid item xs={12}>
         <FormControl fullWidth sx={{ mb: 1 }}>
@@ -142,13 +142,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           selectedValues={filters.regs}
           onChange={handleMultiMap("regs")}
         />
-        <MultipleSelectChip
-          sx={{ mb: 1, mt: 1 }}
-          options={variables.chrms}
-          label="Chromosomes"
-          selectedValues={filters.chrms}
-          onChange={handleMultiMap("chrms")}
-        />
+
         <FormControl fullWidth sx={{ mb: 1 }}>
           <InputLabel id="ancestry_select-label">Ancestry</InputLabel>
           <Select
@@ -173,12 +167,12 @@ const SideFilter: React.FC<SideFilterProps> = ({
             flexDirection: "column",
             alignItems: "center",
             mb: 1,
-            mt: 1,
+
           }}
         >
           <Typography
             className="contrast-text"
-            sx={{ mt: 2, textAlign: "center" }}
+            sx={{ mt: 1, textAlign: "center" }}
           >
             Mean Posterior Prob.
           </Typography>
@@ -194,6 +188,29 @@ const SideFilter: React.FC<SideFilterProps> = ({
             sx={{ width: "85%" }}
           />
         </Box>
+        <Grid item xs={12} sx={{ mt: 2, mb: 2 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              sx={{ flexGrow: 1, minWidth: "50%" }}
+              onClick={applyFilters}
+            >
+              Apply Filters
+            </Button>
+          </Box>
+        </Grid>
+        <Grid item xs={12}>
+          <Typography variant="h5">2- Visualization options:</Typography>
+        </Grid>
+        <MultipleSelectChip
+          sx={{ mb: 1, mt: 1 }}
+          options={variables.chrms}
+          label="Chromosomes"
+          selectedValues={filters.chrms}
+          onChange={handleMultiMap("chrms")}
+        />
+
         <Box
           sx={{
             width: "100%",
@@ -257,18 +274,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
         </Box>
       </Grid>
 
-      <Grid item xs={12}>
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{ flexGrow: 1, minWidth: "50%" }}
-            onClick={applyFilters}
-          >
-            Apply Filters
-          </Button>
-        </Box>
-      </Grid>
+
     </Grid>
   );
 };
