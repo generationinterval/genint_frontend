@@ -1,36 +1,37 @@
 // Import statements remain the same
 import { TreeData } from "@/assets/treeData";
-import clsx from "clsx";
-import { styled } from "@mui/material/styles";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
-import MailIcon from "@mui/icons-material/Mail";
+import CloseIcon from "@mui/icons-material/Close";
 import FolderIcon from "@mui/icons-material/Folder";
-import MapIcon from "@mui/icons-material/Map";
 import GroupIcon from "@mui/icons-material/Group";
+import MailIcon from "@mui/icons-material/Mail";
+import MapIcon from "@mui/icons-material/Map";
 import PersonIcon from "@mui/icons-material/Person";
+import Autocomplete from "@mui/material/Autocomplete";
+import Box from "@mui/material/Box";
+import Checkbox from "@mui/material/Checkbox";
+import Chip from "@mui/material/Chip";
+import { styled } from "@mui/material/styles";
 import { SvgIconProps } from "@mui/material/SvgIcon";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import {
   TreeItem2Content,
+  TreeItem2GroupTransition,
   TreeItem2IconContainer,
   TreeItem2Root,
-  TreeItem2GroupTransition,
 } from "@mui/x-tree-view/TreeItem2";
+import { TreeItem2Icon } from "@mui/x-tree-view/TreeItem2Icon";
+import { TreeItem2Provider } from "@mui/x-tree-view/TreeItem2Provider";
 import {
   useTreeItem2,
   UseTreeItem2Parameters,
 } from "@mui/x-tree-view/useTreeItem2";
-import { TreeItem2Provider } from "@mui/x-tree-view/TreeItem2Provider";
-import { TreeItem2Icon } from "@mui/x-tree-view/TreeItem2Icon";
-import React, { useState, useMemo, useCallback } from "react";
-import TextField from "@mui/material/TextField";
-import Autocomplete from "@mui/material/Autocomplete";
-import CloseIcon from "@mui/icons-material/Close";
-import Chip from "@mui/material/Chip";
-import Checkbox from "@mui/material/Checkbox";
+import clsx from "clsx";
+import React, { useCallback, useMemo, useState } from "react";
 
 // CustomTreeItem component
 const CustomTreeItemRoot = styled(TreeItem2Root)(({ theme }) => ({
@@ -92,17 +93,24 @@ const CustomTreeItemGroupTransition = styled(TreeItem2GroupTransition)(
 
 // Helper function to get appropriate icon for node levels
 const getIconForLevel = (nodeId: string) => {
-  if (nodeId.startsWith("dat")) {
-    return MailIcon;
-  } else if (nodeId.startsWith("oda")) {
-    return FolderIcon;
-  } else if (nodeId.startsWith("reg")) {
-    return MapIcon;
-  } else if (nodeId.startsWith("pop")) {
+
+  if (nodeId.includes("pop")) {
     return GroupIcon;
-  } else {
-    return PersonIcon;
   }
+  if (nodeId.includes("reg")) {
+    return MapIcon;
+  }
+  if (nodeId.includes("oda")) {
+    return FolderIcon;
+  }
+  if (nodeId.includes("dat")) {
+    return MailIcon;
+  }
+  if (nodeId.includes("parent")) {
+    return AccountTreeIcon;
+  }
+  // fallback
+  return PersonIcon;
 };
 
 // Helper function to determine if a node is terminal (has no children)
@@ -285,11 +293,11 @@ const renderTreeItems = (
       >
         {node.children
           ? renderTreeItems(
-              node.children,
-              selectedItems,
-              handleNodeSelectToggle,
-              level + 1 // Increment level for child nodes
-            )
+            node.children,
+            selectedItems,
+            handleNodeSelectToggle,
+            level + 1 // Increment level for child nodes
+          )
           : null}
       </CustomTreeItem>
     );
