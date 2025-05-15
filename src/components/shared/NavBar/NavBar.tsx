@@ -3,13 +3,10 @@ import { paths } from "@/paths";
 import {
   AppBar,
   Box,
-  MenuItem,
-  MenuList,
-  Paper,
-  Popper,
+  Button,
   Stack,
   Toolbar,
-  Typography,
+  Typography
 } from "@mui/material";
 import React, { useRef, useState } from "react";
 
@@ -97,92 +94,107 @@ export const NavBar: React.FC = () => {
               left: "50%",
               transform: "translateX(-50%)", // Center horizontally
               alignItems: "center",
-              width: "40dvw",
+              width: "50dvw",
               height: "100%",
             }}
           >
-            {/* Summary Stats */}
             <Box
               sx={{
-                position: "relative",
-                display: "flex",
+                display: 'flex',
                 flexGrow: 1,
-                height: "100%",
+                height: '100%',
               }}
-              onMouseOver={(e) => handleMenuOpen(e, "summary")}
-              onMouseOut={handleMenuClose}
             >
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center", // Vertically align text
-                  justifyContent: "center", // Horizontally align text
-                  cursor: "pointer",
+                  borderLeft: "1px solid white",
+                  height: "100%", // Ensure full height for the separator
+                  alignSelf: "center", // Vertically center the separator
+                }}
+              />
+              <Button
+                sx={{
                   flexGrow: 1,
-                  color: "primary.contrastText",
-                  height: "100%", // Ensure full height
-                  lineHeight: "normal", // Prevent extra line height padding
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
+                  color: 'primary.contrastText',
+                  height: '100%',
+                  lineHeight: 'normal',
+                  textTransform: 'none', fontSize: "1.05rem",
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
                   },
                 }}
+                onClick={() => handleNavigation(paths.summary_stats.per_ind)}
               >
-                Summary Stats
-              </Box>
-              {/* Dropdown Menu */}
-              <Popper
-                open={menuType === "summary"}
-                anchorEl={anchorEl}
-                placement="bottom-start"
-                style={{ zIndex: 1300 }}
-                modifiers={[
-                  {
-                    name: "offset",
-                    options: {
-                      offset: [0, 0],
-                    },
+                Individual Summary Stats
+              </Button>
+
+
+              <Box
+                sx={{
+                  borderLeft: "1px solid white",
+                  height: "100%", // Ensure full height for the separator
+                  alignSelf: "center", // Vertically center the separator
+                }}
+              />
+              <Button
+                sx={{
+                  flexGrow: 1,
+                  color: 'primary.contrastText',
+                  height: '100%',
+                  lineHeight: 'normal',
+                  textTransform: 'none', fontSize: "1.05rem",
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
                   },
-                ]}
+                }}
+                onClick={() => handleNavigation(paths.summary_stats.per_frag)}
               >
-                <Paper
-                  ref={popperRef}
-                  sx={{
-                    mt: 0.5,
-                    minWidth: anchorEl ? anchorEl.clientWidth : undefined,
-                  }}
-                  onMouseOut={handleMenuClose}
-                >
-                  <MenuList>
-                    <MenuItem
-                      sx={{ justifyContent: "center" }}
-                      onClick={(event) => {
-                        handleMenuClose(event as any);
-                        handleNavigation(paths.summary_stats.per_ind);
-                      }}
-                    >
-                      Per Ind
-                    </MenuItem>
-                    <MenuItem
-                      sx={{ justifyContent: "center" }}
-                      onClick={(event) => {
-                        handleMenuClose(event as any);
-                        handleNavigation(paths.summary_stats.per_group);
-                      }}
-                    >
-                      Per Group
-                    </MenuItem>
-                    <MenuItem
-                      sx={{ justifyContent: "center" }}
-                      onClick={(event) => {
-                        handleMenuClose(event as any);
-                        handleNavigation(paths.summary_stats.per_frag);
-                      }}
-                    >
-                      Per Frag
-                    </MenuItem>
-                  </MenuList>
-                </Paper>
-              </Popper>
+                Fragment Summary Stats
+              </Button>
+              <Box
+                sx={{
+                  borderLeft: "1px solid white",
+                  height: "100%", // Ensure full height for the separator
+                  alignSelf: "center", // Vertically center the separator
+                }}
+              />
+              <Button
+                sx={{
+                  flexGrow: 1,
+                  color: 'primary.contrastText',
+                  height: '100%',
+                  lineHeight: 'normal',
+                  textTransform: 'none', fontSize: "1.05rem",
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                }}
+                onClick={() => handleNavigation(paths.fragment.vis_per_ind)}
+              >
+                Individual Fragment Viewer
+              </Button>
+              <Box
+                sx={{
+                  borderLeft: "1px solid white",
+                  height: "100%", // Ensure full height for the separator
+                  alignSelf: "center", // Vertically center the separator
+                }}
+              />
+              <Button
+                sx={{
+                  flexGrow: 1,
+                  color: 'primary.contrastText',
+                  height: '100%',
+                  lineHeight: 'normal',
+                  textTransform: 'none', fontSize: "1.05rem",
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                }}
+                onClick={() => handleNavigation(paths.fragment.vis_per_reg)}
+              >
+                Region Fragment Viewer
+              </Button>
             </Box>
 
             {/* Separator */}
@@ -194,236 +206,9 @@ export const NavBar: React.FC = () => {
               }}
             />
 
-            {/* Fragment Visualization */}
-            <Box
-              sx={{
-                position: "relative",
-                display: "flex",
-                flexGrow: 1,
-                height: "100%",
-              }}
-              onMouseOver={(e) => handleMenuOpen(e, "fragment")}
-              onMouseOut={handleMenuClose}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  flexGrow: 1,
-                  color: "primary.contrastText",
-                  height: "100%",
-                  lineHeight: "normal",
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  },
-                }}
-              >
-                Fragment Visualization
-              </Box>
-              {/* Dropdown Menu */}
-              <Popper
-                open={menuType === "fragment"}
-                anchorEl={anchorEl}
-                placement="bottom-start"
-                style={{ zIndex: 1300 }}
-                modifiers={[
-                  {
-                    name: "offset",
-                    options: {
-                      offset: [0, 0],
-                    },
-                  },
-                ]}
-              >
-                <Paper
-                  ref={popperRef}
-                  sx={{
-                    mt: 0.5,
-                    minWidth: anchorEl ? anchorEl.clientWidth : undefined,
-                  }}
-                  onMouseOut={handleMenuClose}
-                >
-                  <MenuList>
-                    <MenuItem
-                      sx={{ justifyContent: "center" }}
-                      onClick={(event) => {
-                        handleMenuClose(event as any);
-                        handleNavigation(paths.fragment.vis_per_ind);
-                      }}
-                    >
-                      Per Ind
-                    </MenuItem>
-                    <MenuItem
-                      sx={{ justifyContent: "center" }}
-                      onClick={(event) => {
-                        handleMenuClose(event as any);
-                        handleNavigation(paths.fragment.vis_per_reg);
-                      }}
-                    >
-                      Per Reg
-                    </MenuItem>
-                  </MenuList>
-                </Paper>
-              </Popper>
-            </Box>
-
-            {/* Separator */}
-            <Box
-              sx={{
-                borderLeft: "1px solid white",
-                height: "100%",
-                alignSelf: "center",
-              }}
-            />
-
-            {/* Others */}
-            <Box
-              sx={{
-                position: "relative",
-                display: "flex",
-                flexGrow: 1,
-                height: "100%",
-              }}
-              onMouseOver={(e) => handleMenuOpen(e, "others")}
-              onMouseOut={handleMenuClose}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  flexGrow: 1,
-                  color: "primary.contrastText",
-                  height: "100%",
-                  lineHeight: "normal",
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  },
-                }}
-              >
-                Others
-              </Box>
-              {/* Dropdown Menu */}
-              <Popper
-                open={menuType === "others"}
-                anchorEl={anchorEl}
-                placement="bottom-start"
-                style={{ zIndex: 1300 }}
-                modifiers={[
-                  {
-                    name: "offset",
-                    options: {
-                      offset: [0, 0],
-                    },
-                  },
-                ]}
-              >
-                <Paper
-                  ref={popperRef}
-                  sx={{
-                    mt: 0.5,
-                    minWidth: anchorEl ? anchorEl.clientWidth : undefined,
-                  }}
-                  onMouseOut={handleMenuClose}
-                >
-                  <MenuList>
-                    <MenuItem
-                      sx={{ justifyContent: "center" }}
-                      onClick={(event) => {
-                        handleMenuClose(event as any);
-                        handleNavigation(paths.others.reg_seq_cum);
-                      }}
-                    >
-                      Reg Seq Cum
-                    </MenuItem>
-                    <MenuItem
-                      sx={{ justifyContent: "center" }}
-                      onClick={(event) => {
-                        handleMenuClose(event as any);
-                        handleNavigation(paths.others.hmm_prob);
-                      }}
-                    >
-                      HMM Prob
-                    </MenuItem>
-                    <MenuItem
-                      sx={{ justifyContent: "center" }}
-                      onClick={(event) => {
-                        handleMenuClose(event as any);
-                        handleNavigation(paths.others.outgroup_filter);
-                      }}
-                    >
-                      Outgroup Filter
-                    </MenuItem>
-                  </MenuList>
-                </Paper>
-              </Popper>
-            </Box>
           </Stack>
 
-          {/* Right Partition */}
-          <Stack
-            direction="row"
-            spacing={0} // Remove default spacing between items
-            sx={{
-              position: "absolute",
-              flexGrow: 1,
-              right: "5%",
-              alignItems: "center",
-              width: "20dvw",
-              height: "100%",
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center", // Center text horizontally
-                cursor: "pointer",
-                flexGrow: 1, // Allow the box to grow equally with others
-                color: "#000000",
-                height: "100%",
-                backgroundColor: "#FFDD57",
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
-                },
-              }}
-              onClick={() =>
-                window.open(
-                  "https://docs.google.com/document/d/1JRWpkrQgZZWFrVSoFaIyffE0t9Mg6IEndR0z1k7a6hI/edit?tab=t.0",
-                  "_blank" // Open in a new tab
-                )
-              }
-            >
-              Feedback Document
-            </Box>
 
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center", // Center text horizontally
-                cursor: "pointer",
-                flexGrow: 1, // Allow the box to grow equally with others
-                color: "#000000",
-                height: "100%",
-                backgroundColor: "#4CAF50",
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.2)", // Highlight on hover
-                },
-              }}
-              onClick={() =>
-                window.open(
-                  "https://docs.google.com/document/d/1cL6oENyD6VUiUcreoTpUGiFGX-raaNkgyI6Uu8ZDqMM/edit?tab=t.0",
-                  "_blank" // Open in a new tab
-                )
-              }
-            >
-              Latest Changes
-            </Box>
-          </Stack>
         </Toolbar>
       </AppBar>
     </Box>
