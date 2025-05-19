@@ -221,6 +221,22 @@ export const optionsContinuous = ["Time",
   "Anc Oceania",
   "Anc South Asia"]
 
+export const optionsContinuousShort = ["tim",
+  "lat",
+  "lon",
+  "len_mea",
+  "len_med",
+  "len_max",
+  "len_min",
+  "nfr",
+  "seq",
+  "ancAFR",
+  "ancAMR",
+  "ancEAS",
+  "ancEUR",
+  "ancOCE",
+  "ancSAS",]
+
 export const optionsAll = ["Sex",
   "Population",
   "Region",
@@ -293,3 +309,4 @@ export const tdThresholdDivisorMarks = [
   { value: 10, label: "Less" },
   { value: 45, label: "More" },
 ];
+

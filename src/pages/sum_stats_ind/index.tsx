@@ -2,7 +2,7 @@ import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownl
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import HistogramComponent from "@/pages/sum_stats_ind/components/HistogramComponent";
 import IDDensityComponent from "@/pages/sum_stats_ind/components/IDDensityComponent";
-import MapComponent from "@/pages/sum_stats_ind/components/MapComponent";
+import MemoizedMapComponent from "@/pages/sum_stats_ind/components/MapComponent";
 import PointComponent from "@/pages/sum_stats_ind/components/PointComponent";
 import SideFilter from "@/pages/sum_stats_ind/components/SideFilter";
 import TDDensityComponent from "@/pages/sum_stats_ind/components/TDDensityComponent";
@@ -78,7 +78,7 @@ export const SummStatInd: React.FC = () => {
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
   const [loading, setLoading] = useState(false); // To handle loading state
-
+  const [mapRefreshKey, setMapRefreshKey] = useState(0);
   useEffect(() => {
     if (filters.plot) {
       applyFilters();
@@ -118,6 +118,7 @@ export const SummStatInd: React.FC = () => {
       console.error("Error:", error);
       setIsFiltersApplied(false);
     } finally {
+      setMapRefreshKey(k => k + 1);
       setLoading(false);
     }
     console.log("Data fetched:", data);
@@ -469,7 +470,8 @@ export const SummStatInd: React.FC = () => {
                 className="map-container"
                 style={{ width: "100%", height: "100%", zIndex: 0 }}
               >
-                <MapComponent
+                <MemoizedMapComponent
+                  key={mapRefreshKey}
                   data={data}
                   col={filters.var_1_mapped}
                   col_unmapped={filters.var_1}

@@ -1,5 +1,5 @@
 import { data_cmaps, reg_cmaps } from "@/assets/colormaps";
-import { variables } from "@/assets/sharedOptions";
+import { mappingToLong, optionsContinuousShort } from "@/pages/sum_stats_ind/static/ssiStatic";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import * as d3 from "d3";
 import L from "leaflet";
@@ -7,8 +7,8 @@ import "leaflet/dist/leaflet.css";
 import React, { useEffect, useRef } from "react";
 
 interface JitteredDataPoint extends DataPoint {
-  jitteredLat?: number;
-  jitteredLon?: number;
+  jitteredLat: number;
+  jitteredLon: number;
 }
 
 interface MapComponentProps {
@@ -45,7 +45,7 @@ const createColorScale = (
     discreteOrContinuous = "default";
   }
   // Rule 2: If the variable in col is continuous, create a continuous colormap
-  else if (variables.continuousOptionsShort.includes(col)) {
+  else if (optionsContinuousShort.includes(col)) {
     const extent = d3.extent(data, (d) => +d[col as keyof JitteredDataPoint]!);
     const isExtentValid = extent[0] !== undefined && extent[1] !== undefined;
     const colorScale = d3
@@ -121,7 +121,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     "ancEUR",
     "ancOCE",
   ];
-
+  const tooltipContainerRef = useRef<HTMLDivElement>(null);
+  // 2️⃣ And a ref to hold the D3 selection of that div
+  const tooltipSelRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined> | null>(null);
   let filteredData = data;
   const colIsAnc = ancFields.includes(col);
 
@@ -132,6 +134,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   // Proceed with filteredData instead of data
   data = filteredData;
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstance = useRef<L.Map>();
   const dataColorScale = (dat: string) => {
     return data_cmaps[dat as keyof typeof data_cmaps] || "#CCCCCC";
   };
@@ -144,38 +147,159 @@ const MapComponent: React.FC<MapComponentProps> = ({
     .scaleOrdinal(d3.schemeSet2)
     .domain([...new Set(data.map((d) => d.pop))]);
 
-  const baseZoom = 5; // Reference zoom level
-  const baseRadiusData = map_data_rad; // Base radius for data circles
-  const baseRadiusReg = map_reg_rad; // Base radius for region circles
-  const baseRadiusPop = map_pop_rad; // Base radius for population circles
-  const baseRadiusInd = map_ind_rad; // Base radius for individual circles
-  function getScaleFactor(currentZoom: number) {
-    const scale = Math.pow(2, currentZoom - baseZoom);
-    return scale;
-  }
+
+  const generateGaussianNoise = (mean: number, stdDev: number): number => {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return stdDev * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) + mean;
+  };
+
+  const applyJitter = (
+    lat: number,
+    lon: number,
+    latJit: number,
+    lonJit: number
+  ): { jitterLat: number; jitterLon: number } => ({
+    jitterLat: lat + generateGaussianNoise(0, latJit),
+    jitterLon: lon + generateGaussianNoise(0, lonJit),
+  });
+
+  // now memoize:
+  const jitteredData = React.useMemo(() => {
+    // runs *only* when data, map_lat_jit or map_lon_jit change
+    return data.map(d => {
+      const { jitterLat, jitterLon } = applyJitter(
+        d.lat,
+        d.lon,
+        map_lat_jit * 0.5,
+        map_lon_jit * 0.5
+      );
+      return { ...d, jitteredLat: jitterLat, jitteredLon: jitterLon };
+    });
+  }, [data, map_lat_jit, map_lon_jit]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
-    const mapElement = mapRef.current;
+    // 1️⃣ Create the Leaflet map only once…
+    if (!mapRef.current || !tooltipContainerRef.current) return;
     const bounds = L.latLngBounds(
       L.latLng(-85, -250), // Southwest corner
       L.latLng(85, 250) // Northeast corner
     );
-    const tooltip = d3
-      .select(mapElement)
-      .append("div")
+    const map = L.map(mapRef.current, {
+      center: [47, 2],
+      zoom: 5,
+      maxZoom: 10, // Set max zoom level to prevent zooming beyond bounds
+      minZoom: 2.25, // Set min zoom level to prevent zooming beyond bounds
+      maxBounds: bounds, // Set max bounds to restrict panning entirely
+      maxBoundsViscosity: 1.0, // Set viscosity to 1 to completely block panning beyond bounds
+      worldCopyJump: false, // Disable world copy to prevent wrapping at boundaries
+      attributionControl: false, // Disable attribution control
+    });
+    map.getContainer().appendChild(tooltipContainerRef.current);
+    // Create a new attribution control with position 'bottomleft'
+    L.control
+      .attribution({
+        position: "bottomleft", // Position the attribution control in the lower left
+      })
+      .addTo(map);
+
+    // Add a tile layer (OpenStreetMap)
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
+      {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 10,
+      }
+    ).addTo(map);
+
+    // Add an SVG layer
+    L.svg().addTo(map);
+
+    mapInstance.current = map;
+    // select the ref’d div only once, stash it in tooltipSelRef
+    tooltipSelRef.current = d3
+      .select(tooltipContainerRef.current)
       .attr("class", "map-tooltip")
-      .style("position", "absolute")
+      .style("position", "fixed")      // ← fixed instead of absolute
+      .style("pointer-events", "none")
       .style("background", "white")
       .style("border", "1px solid #ccc")
-      .style("padding", "10px")
-      .style("border-radius", "5px")
-      .style("box-shadow", "0 0 10px rgba(0,0,0,0.1)")
-      .style("pointer-events", "none")
-      .style("z-index", "1000")
+      .style("padding", "5px")
+      .style("border-radius", "4px")
+      .style("box-shadow", "0 0 5px rgba(0,0,0,0.3)")
       .style("opacity", 0)
-      .style("display", "none");
-    // Function to format numeric values with limited decimal places
+      .style("display", "none")
+      .style("z-index", 1000);
+
+    return () => {
+      map.remove();
+      // clean up tooltip selection
+      tooltipSelRef.current?.remove();
+    };
+  }, []);
+
+  // — 2) CIRCLE + LEGEND REDRAW — 
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !tooltipSelRef.current) return;
+
+    const svg = d3.select(map.getPanes().overlayPane).select("svg").style("pointer-events", "auto");
+
+
+    // 1️⃣ clear out old circles & legend
+    svg.selectAll(".circle_data, .circle_reg, .circle_pop, .circle_ind").remove();
+    // 2️⃣ helper functions
+    const project = (lat: number, lon: number) =>
+      map.latLngToLayerPoint(new L.LatLng(lat, lon));
+
+    // 3️⃣ scales & color functions
+    const popColor = d3.scaleOrdinal(d3.schemeSet2)
+      .domain([...new Set(data.map(d => d.pop))]);
+    const { getColor, legendData, discreteOrContinuous } =
+      createColorScale(data, col);
+    // 4️⃣ draw circles by layer
+    const zoom = map.getZoom();
+    const factor = Math.pow(2, zoom - 5);
+    if (map_data) {
+      svg.selectAll(".circle_data")
+        .data(jitteredData)
+        .enter()
+        .append("circle")
+        .attr("class", "circle_data")
+        .attr("cx", d => project(d.jitteredLat!, d.jitteredLon!).x)
+        .attr("cy", d => project(d.jitteredLat!, d.jitteredLon!).y)
+        .attr("r", map_data_rad * factor)
+        .attr("fill", (d) => dataColorScale(d.dat))
+        .attr("fill-opacity", 0.02);
+    }
+    if (map_reg) {
+      svg
+        .selectAll(".circle_reg")
+        .data(jitteredData)
+        .enter()
+        .append("circle")
+        .attr("class", "circle_reg")
+        .attr("cx", d => project(d.jitteredLat!, d.jitteredLon!).x)
+        .attr("cy", d => project(d.jitteredLat!, d.jitteredLon!).y)
+        .attr("r", map_reg_rad * factor)
+        .attr("fill", (d) => regColorScale(d.reg))
+        .attr("fill-opacity", 0.4);
+    }
+    if (map_pop) {
+      svg.selectAll(".circle_pop")
+        .data(jitteredData)
+        .enter()
+        .append("circle")
+        .attr("class", "circle_pop")
+        .attr("cx", d => project(d.jitteredLat!, d.jitteredLon!).x)
+        .attr("cy", d => project(d.jitteredLat!, d.jitteredLon!).y)
+        .attr("r", map_pop_rad * factor)
+        .attr("fill", d => popColor(d.pop))
+        .attr("fill-opacity", 0.6);
+    }
+
     const formatValue = (value: number | string | null, decimals = 3): string => {
       if (value === null || value === undefined) return 'N/A';
       if (typeof value === 'string') return value;
@@ -203,19 +327,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }
     };
 
-    // Updated tooltip positioning function
-    const positionTooltip = (event: MouseEvent, d: JitteredDataPoint) => {
-      // Get the map's current container dimensions
-      const mapRect = mapElement.getBoundingClientRect();
+    function positionTooltip(event: MouseEvent, d: JitteredDataPoint) {
+      const tooltip = tooltipSelRef.current!;
+      const x = event.clientX + 10;
+      const y = event.clientY + 10;
 
-      // Calculate mouse position relative to the map container
-      const mouseX = event.clientX - mapRect.left;
-      const mouseY = event.clientY - mapRect.top;
-
-      // Position the tooltip
       tooltip
-        .style("left", `${mouseX + 10}px`)
-        .style("top", `${mouseY + 10}px`)
+        .style("left", `${x}px`)
+        .style("top", `${y}px`)
         .style("display", "block")
         .style("opacity", 1)
         .html(`
@@ -242,215 +361,61 @@ const MapComponent: React.FC<MapComponentProps> = ({
           </div>
         `);
     };
-
-    // Initialize the map
-    const map = L.map(mapRef.current, {
-      center: [47, 2],
-      zoom: 5,
-      maxZoom: 10, // Set max zoom level to prevent zooming beyond bounds
-      minZoom: 2.25, // Set min zoom level to prevent zooming beyond bounds
-      maxBounds: bounds, // Set max bounds to restrict panning entirely
-      maxBoundsViscosity: 1.0, // Set viscosity to 1 to completely block panning beyond bounds
-      worldCopyJump: false, // Disable world copy to prevent wrapping at boundaries
-      attributionControl: false, // Disable attribution control
-    });
-    // Create a new attribution control with position 'bottomleft'
-    L.control
-      .attribution({
-        position: "bottomleft", // Position the attribution control in the lower left
-      })
-      .addTo(map);
-
-    // Add a tile layer (OpenStreetMap)
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 10,
-      }
-    ).addTo(map);
-
-    // Add an SVG layer
-    L.svg().addTo(map);
-
-    // Function to project the lat/lon coordinates to pixels
-    function projectPoint(lat: number, lon: number) {
-      const point = map.latLngToLayerPoint(new L.LatLng(lat, lon));
-      return point;
-    }
-    function generateGaussianNoise(mean: number, stdDev: number): number {
-      let u = 0,
-        v = 0;
-      while (u === 0) u = Math.random(); // Ensure u is not zero
-      while (v === 0) v = Math.random();
-      return (
-        stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v) +
-        mean
-      );
-    }
-
-    function applyJitter(
-      lat: number,
-      lon: number,
-      map_lat_jit: number,
-      map_lon_jit: number
-    ) {
-      const jitterLat = lat + generateGaussianNoise(0, map_lat_jit);
-      const jitterLon = lon + generateGaussianNoise(0, map_lon_jit);
-      return { jitterLat, jitterLon };
-    }
-
-    const jitteredData = data.map((d) => {
-      const { jitterLat, jitterLon } = applyJitter(
-        d.lat,
-        d.lon,
-        map_lat_jit * 0.5,
-        map_lon_jit * 0.5
-      );
-      return { ...d, jitteredLat: jitterLat, jitteredLon: jitterLon };
-    });
-
-    // Function to update the circles when the map moves
-    // Update the circle positions when the map is zoomed or moved
-    function updateCircles() {
-      const currentZoom = map.getZoom();
-      const scaleFactor = getScaleFactor(currentZoom);
-
-      svg
-        .selectAll(".circle_data")
-        .attr("cx", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).x)
-        .attr("cy", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).y)
-        .attr("r", baseRadiusData * scaleFactor);
-
-      svg
-        .selectAll(".circle_reg")
-        .attr("cx", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).x)
-        .attr("cy", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).y)
-        .attr("r", baseRadiusReg * scaleFactor);
-
-      svg
-        .selectAll(".circle_pop")
-        .attr("cx", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).x)
-        .attr("cy", (d: any) => projectPoint(d.jitteredLat, d.jitteredLon).y)
-        .attr("r", baseRadiusPop * scaleFactor);
-
-      svg
-        .selectAll(".circle_ind")
-        .attr("cx", (d: any) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
-        .attr("cy", (d: any) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-        .attr("r", baseRadiusInd * scaleFactor)
-        .attr("pointer-events", "visible");
-    }
-
-    const { getColor, legendData, discreteOrContinuous } = createColorScale(
-      data,
-      col
-    );
-
-    // Select the SVG overlay for circles
-    const svg = d3
-      .select(map.getPanes().overlayPane)
-      .select("svg")
-      .attr("class", "leaflet-zoom-animated")
-      .style("position", "absolute")
-      .style("top", "0")
-      .style("left", "0");
-
-    // Remove previous circles to avoid duplication
-    svg.selectAll(".circle_data, .circle_reg, .circle_pop").remove();
-    const currentZoom = map.getZoom();
-    const scaleFactor = getScaleFactor(currentZoom);
-
-    // Data attribute circles
-    if (map_data) {
-      svg
-        .selectAll(".circle_data")
-        .data(jitteredData)
-        .enter()
-        .append("circle")
-        .attr("class", "circle_data")
-        .attr("cx", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
-        .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-        .attr("r", baseRadiusData * scaleFactor)
-        .attr("fill", (d) => dataColorScale(d.dat))
-        .attr("stroke", "black")
-        .attr("stroke-width", 0)
-        .attr("fill-opacity", 0.02);
-    }
-
-    // Region attribute circles
-    if (map_reg) {
-      svg
-        .selectAll(".circle_reg")
-        .data(jitteredData)
-        .enter()
-        .append("circle")
-        .attr("class", "circle_reg")
-        .attr("cx", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
-        .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-        .attr("r", baseRadiusReg * scaleFactor)
-        .attr("fill", (d) => regColorScale(d.reg))
-        .attr("stroke", "black")
-        .attr("stroke-width", 0)
-        .attr("fill-opacity", 0.4);
-    }
-
-    // Population attribute circles
-    if (map_pop) {
-      svg
-        .selectAll(".circle_pop")
-        .data(jitteredData)
-        .enter()
-        .append("circle")
-        .attr("class", "circle_pop")
-        .attr("cx", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
-        .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-        .attr("r", baseRadiusPop * scaleFactor)
-        .attr("fill", (d) => popColorScale(d.pop))
-        .attr("stroke", "black")
-        .attr("stroke-width", 0)
-        .attr("fill-opacity", 0.6);
-    }
-
-    svg
-      .selectAll(".circle_ind")
+    // 5️⃣ individual circles + tooltips
+    svg.selectAll(".circle_ind")
       .data(jitteredData)
       .enter()
       .append("circle")
       .attr("class", "circle_ind")
-      .attr("cx", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).x)
-      .attr("cy", (d) => projectPoint(d.jitteredLat!, d.jitteredLon!).y)
-      .attr("r", baseRadiusInd * scaleFactor)
-      .attr("fill", (d) => getColor(d))
-      .attr("fill-opacity", 1)
-      .on("mouseenter", function (event, d) {
-        // Highlight the circle
-        d3.select(this)
+      .attr("cx", d => project(d.jitteredLat!, d.jitteredLon!).x)
+      .attr("cy", d => project(d.jitteredLat!, d.jitteredLon!).y)
+      .attr("r", map_ind_rad * factor)
+      .attr("fill", getColor)
+      .on("mouseover", (event, d) => {
+        d3.select(event.currentTarget)
           .attr("stroke", "black")
           .attr("stroke-width", 2);
-
-        // Position and show the tooltip
-        positionTooltip(event, d);
+        positionTooltip(event as MouseEvent, d);
       })
-      .on("mousemove", function (event, d) {
-        // Update tooltip position as mouse moves
-        positionTooltip(event, d);
-      })
-      .on("mouseleave", function () {
-        // Remove highlight and hide tooltip
-        d3.select(this)
-          .attr("stroke", null)
+      .on("mousemove", (event, d) => positionTooltip(event as MouseEvent, d))
+      .on("mouseout", function () {
+        // here, `this` is the SVG circle element
+        d3.select<SVGCircleElement, JitteredDataPoint>(this)
           .attr("stroke-width", 0);
 
-        tooltip
+        tooltipSelRef.current!
           .style("display", "none")
           .style("opacity", 0);
       });
 
-    map.on("moveend", updateCircles);
-    map.on("zoomend", updateCircles);
+    // 6️⃣ keep circles in sync on pan/zoom
+    const update = () => {
+      const zf = Math.pow(2, map.getZoom() - 5);
+      svg
+        .selectAll<SVGCircleElement, JitteredDataPoint>(".circle_data")
+        .attr("r", map_data_rad * zf)
+        .attr("cx", d => project(d.jitteredLat, d.jitteredLon).x)
+        .attr("cy", d => project(d.jitteredLat, d.jitteredLon).y);
 
+      svg
+        .selectAll<SVGCircleElement, JitteredDataPoint>(".circle_reg")
+        .attr("r", map_reg_rad * zf)
+        .attr("cx", d => project(d.jitteredLat, d.jitteredLon).x)
+        .attr("cy", d => project(d.jitteredLat, d.jitteredLon).y);
+
+      svg
+        .selectAll<SVGCircleElement, JitteredDataPoint>(".circle_pop")
+        .attr("r", map_pop_rad * zf)
+        .attr("cx", d => project(d.jitteredLat, d.jitteredLon).x)
+        .attr("cy", d => project(d.jitteredLat, d.jitteredLon).y);
+
+      svg
+        .selectAll<SVGCircleElement, JitteredDataPoint>(".circle_ind")
+        .attr("r", map_ind_rad * zf)
+        .attr("cx", d => project(d.jitteredLat, d.jitteredLon).x)
+        .attr("cy", d => project(d.jitteredLat, d.jitteredLon).y);
+    };
+    map.on("moveend", update).on("zoomend", update);
     // Create the legend content
     const legendContainer = d3.select("#legend");
     legendContainer.selectAll("*").remove(); // Clear previous legend content
@@ -466,7 +431,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .append("div")
         .text(col_unmapped || "Main Legend")
         .style("font-weight", "bold")
-        .style("margin-bottom", "5px");
+        .style("margin-bottom", "5px").style("font-size", "15px");
 
       // Populate main legend based on whether it’s continuous or discrete
       if (discreteOrContinuous === "continuous" && legendData[0].extent) {
@@ -475,7 +440,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           .append("div")
           .append("svg")
           .attr("width", 150) // Increase width to accommodate text
-          .attr("height", 220); // Increase height to fit text above and below
+          .attr("height", 120); // Increase height to fit text above and below
 
         // Append linear gradient
         const gradient = gradientLegend
@@ -507,24 +472,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
         // Draw the gradient rectangle
         gradientLegend
           .append("rect")
-          .attr("x", 15) // Center the rectangle in the svg
+          .style("margin-right", "8px") // Center the rectangle in the svg
           .attr("y", 10) // Add some padding at the top
-          .attr("width", 20)
-          .attr("height", 200)
+          .attr("width", "18px")
+          .attr("height", 100)
           .style("fill", "url(#main-color-gradient)");
 
         // Add min label at the bottom of the gradient
         gradientLegend
           .append("text")
-          .attr("x", 40)
-          .attr("y", 210)
+          .attr("x", 26)
+          .attr("y", 110)
           .style("font-size", "15px")
           .text(`Min: ${formatValue(extent[0], 3)}`);
 
         // Add max label at the top of the gradient
         gradientLegend
           .append("text")
-          .attr("x", 40) // Position to the right of the gradient rectangle
+          .attr("x", 26) // Position to the right of the gradient rectangle
           .attr("y", 25)
           .style("font-size", "15px") // Adjust font size if needed
           .text(`Max: ${formatValue(extent[1], 3)}`);
@@ -547,7 +512,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     // Function to create a discrete legend
     function createDiscreteLegend(
-      container: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
+      container: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown>,
       title: string,
       colorInput: Record<string, string> | d3.ScaleOrdinal<string, string>,
       selectedValues: string[]
@@ -558,7 +523,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .append("div")
         .text(title)
         .style("font-weight", "bold")
-        .style("margin-bottom", "5px");
+        .style("margin-bottom", "5px").style("font-size", "15px");
 
       // Handle both predefined colormaps and D3 scales
       selectedValues.forEach((key) => {
@@ -568,6 +533,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             : colorInput[key]; // For plain colormap objects
 
         if (color) {
+          const displayLabel = mappingToLong[key as keyof typeof mappingToLong] ?? key;
           const item = legend
             .append("div")
             .style("display", "flex")
@@ -581,7 +547,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             .style("background-color", color)
             .style("margin-right", "8px");
 
-          item.append("span").text(key);
+          item.append("span").text(displayLabel).style("font-size", "15px");
         }
       });
     }
@@ -616,48 +582,44 @@ const MapComponent: React.FC<MapComponentProps> = ({
         selectedPopulationValues
       );
     }
-
     return () => {
-      map.remove();
-      tooltip.remove();
+      map.off("moveend", update).off("zoomend", update);
     };
+
   }, [
-    data,
-    col,
-    map_data,
-    map_reg,
-    map_pop,
-    map_data_rad,
-    map_reg_rad,
-    map_pop_rad,
-    map_lat_jit,
-    map_lon_jit,
-    baseRadiusData,
-    baseRadiusReg,
-    baseRadiusPop,
-    baseRadiusInd,
-    col_unmapped,
-    popColorScale,
+    data, col,
+    map_data, map_data_rad,
+    map_reg, map_reg_rad,
+    map_pop, map_pop_rad,
+    map_ind_rad,
+    map_lat_jit, map_lon_jit
   ]);
 
+
+
   return (
-    <div style={{ position: "relative", height: "100%", width: "100%" }}>
-      <div ref={mapRef} id="mapid" style={{ height: "100%", width: "100%" }} />
+    <div style={{ width: "100%", height: "100%" }}>
       <div
-        id="legend"
-        style={{
-          position: "absolute",
-          bottom: "3%",
-          left: "1%",
-          backgroundColor: "white",
-          padding: "10px",
-          borderRadius: "4px",
-          boxShadow: "0 0 5px rgba(0, 0, 0, 0.3)",
-          zIndex: 1000,
-        }}
-      />
+        ref={mapRef}
+        style={{ position: "relative", width: "100%", height: "100%" }}
+      >
+        <div
+          id="legend"
+          style={{
+            position: "absolute",
+            bottom: "3%",
+            left: "1%",
+            backgroundColor: "white",
+            padding: "10px",
+            borderRadius: "4px",
+            boxShadow: "0 0 5px rgba(0, 0, 0, 0.3)",
+            zIndex: 1000,
+          }}
+        />
+        <div ref={tooltipContainerRef} />
+      </div>
     </div>
   );
 };
 
-export default MapComponent;
+export default React.memo(MapComponent);

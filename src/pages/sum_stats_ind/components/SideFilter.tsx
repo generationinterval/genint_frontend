@@ -1088,6 +1088,12 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   value={filters.map_ind_rad}
                   onChange={handleNumberInput("map_ind_rad")}
                 />{" "}
+                <Typography
+                  className="contrast-text"
+                  sx={{ mt: 1, textAlign: "center" }}
+                >
+                  Point Jitter
+                </Typography>
                 <Box
                   sx={{
                     width: "100%",
@@ -1099,6 +1105,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     mt: 1,
                   }}
                 >
+
                   <Box
                     sx={{
                       width: "45%",
