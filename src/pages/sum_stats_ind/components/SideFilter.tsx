@@ -21,7 +21,7 @@ import {
   Typography,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 
 interface SideFilterProps {
@@ -44,6 +44,49 @@ const SideFilter: React.FC<SideFilterProps> = ({
   setFilters,
   applyFilters,
 }) => {
+  const {
+    tree_lin,
+    var_1,
+    var_2_1,
+    var_2_2,
+    data_1,
+    ancs_1,
+    chrms_1,
+    reg_1,
+    col,
+    fac_x,
+    fac_y,
+    mpp_1,
+  } = filters;
+  const [isDirty, setIsDirty] = useState(false);
+  const hasMounted = useRef(false);
+
+  // mark dirty on any filter change after initial mount
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+    } else {
+      setIsDirty(true);
+    }
+  }, [
+    tree_lin,
+    var_1,
+    var_2_1,
+    var_2_2,
+    data_1,
+    ancs_1,
+    chrms_1,
+    reg_1,
+    col,
+    fac_x,
+    fac_y,
+    mpp_1,
+  ]);
+
+  const onApply = async () => {
+    await applyFilters();
+    setIsDirty(false);
+  };
   const normalizeOptionName = (option: string) =>
     option.toLowerCase().replace(/\s+/g, "_");
 
@@ -521,23 +564,6 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     ))}
                 </Select>
               </FormControl>
-              {filters.plot !== "Map" && (
-                <Box sx={checkboxBoxStyles}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={filters.mea_med_1}
-                        size="small"
-                        onChange={handleCheckbox("mea_med_1")}
-                        disabled={filters.col.some((col) =>
-                          optionsContinuous.includes(col)
-                        )} // Disable when continuous variable is selected
-                      />
-                    }
-                    label="Mean/Median"
-                  />
-                </Box>
-              )}
             </Grid>
           )}
           {tabValue === 1 && (
@@ -660,6 +686,39 @@ const SideFilter: React.FC<SideFilterProps> = ({
                 mt: 1,
               }}
             >
+              {filters.plot !== "Map" && (
+                <>
+                  <MultipleSelectChip
+                    sx={{ mb: 1 }}
+                    options={
+                      filters.plot === "Violin" || filters.plot === "Density"
+                        ? optionsAll
+                        : optionsDiscrete
+                    }
+                    label="Color by"
+                    selectedValues={filters.col}
+                    onChange={handleColor}
+                  />
+
+                  <MultipleSelectChip
+                    sx={{ mb: 1, mt: 1 }}
+                    options={optionsDiscrete}
+                    label="Facet in X"
+                    selectedValues={filters.fac_x}
+                    onChange={handleMultiMap("fac_x")}
+                  />
+
+                  {filters.plot !== "Violin" && (
+                    <MultipleSelectChip
+                      sx={{ mb: 1, mt: 1 }}
+                      options={optionsDiscrete}
+                      label="Facet in Y"
+                      selectedValues={filters.fac_y}
+                      onChange={handleMultiMap("fac_y")}
+                    />
+                  )}
+                </>
+              )}
               <Typography
                 className="contrast-text"
                 sx={{ mt: 2, textAlign: "center" }}
@@ -679,44 +738,59 @@ const SideFilter: React.FC<SideFilterProps> = ({
               />
             </Box>
           </Grid>
-
+          <Grid item xs={12}>
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+              <Button
+                onClick={onApply}
+                variant="contained"
+                disabled={!isDirty}
+                sx={{
+                  flexGrow: 1,
+                  minWidth: "50%",
+                  // when disabled, override MUI’s default gray
+                  "&.Mui-disabled": {
+                    backgroundColor: "grey.300",
+                    color: "black",
+                  },
+                  // when enabled + dirty, optional pulse
+                  ...(isDirty && {
+                    animation: "pulse 1.2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { boxShadow: "0 0 0 0 rgb(0, 60, 255)" },
+                      "70%": { boxShadow: "0 0 0 10px rgba(255,165,0, 0)" },
+                      "100%": { boxShadow: "0 0 0 0 rgba(255,165,0, 0)" },
+                    }
+                  })
+                }}
+              >
+                Apply Filters
+              </Button>
+            </Box>
+          </Grid>
           <>
             <Grid item xs={12}>
-              <Typography variant="h5">3- Plot Specific Options:</Typography>
+              <Typography variant="h5">3- Visualization Options:</Typography>
             </Grid>
           </>
           <Grid item xs={12}>
             {filters.plot !== "Map" && (
               <>
-                <MultipleSelectChip
-                  sx={{ mb: 1 }}
-                  options={
-                    filters.plot === "Violin" || filters.plot === "Density"
-                      ? optionsAll
-                      : optionsDiscrete
-                  }
-                  label="Color by"
-                  selectedValues={filters.col}
-                  onChange={handleColor}
-                />
-
-                <MultipleSelectChip
-                  sx={{ mb: 1, mt: 1 }}
-                  options={optionsDiscrete}
-                  label="Facet in X"
-                  selectedValues={filters.fac_x}
-                  onChange={handleMultiMap("fac_x")}
-                />
-
-                {filters.plot !== "Violin" && (
-                  <MultipleSelectChip
-                    sx={{ mb: 1, mt: 1 }}
-                    options={optionsDiscrete}
-                    label="Facet in Y"
-                    selectedValues={filters.fac_y}
-                    onChange={handleMultiMap("fac_y")}
+                <Box sx={checkboxBoxStyles}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={filters.mea_med_1}
+                        size="small"
+                        onChange={handleCheckbox("mea_med_1")}
+                        disabled={filters.col.some((col) =>
+                          optionsContinuous.includes(col)
+                        )} // Disable when continuous variable is selected
+                      />
+                    }
+                    label="Mean/Median"
                   />
-                )}
+                </Box>
+
                 {filters.plot !== "Violin" && (
                   <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
                     <InputLabel id="x_axis_options">X Axis Options</InputLabel>
@@ -1082,18 +1156,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
             )}
           </Grid>
 
-          <Grid item xs={12}>
-            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                sx={{ flexGrow: 1, minWidth: "50%" }}
-                onClick={applyFilters}
-              >
-                Apply Filters
-              </Button>
-            </Box>
-          </Grid>
+
         </Grid>
       </Grid>
     </Grid>

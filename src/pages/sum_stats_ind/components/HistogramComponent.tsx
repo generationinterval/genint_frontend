@@ -517,9 +517,7 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
     y_axis,
     min_y_axis,
     max_y_axis,
-    var_1_mapped,
     n_bins,
-    col,
   ]);
 
   const handleResize = useCallback(() => {
@@ -546,8 +544,6 @@ const HistogramComponent: React.FC<HistogramPlotProps> = ({
     containerRef,
     svgRef,
     data,
-    col,
-    var_1_mapped,
     n_bins,
     mea_med_1,
     x_axis,
