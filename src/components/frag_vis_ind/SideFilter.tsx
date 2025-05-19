@@ -6,7 +6,7 @@ import {
   min_chr_len_marks,
   mpp_marks,
   variables,
-} from "@/assets/FilterOptions";
+} from "@/assets/sharedOptions";
 import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
 import {

@@ -1,5 +1,5 @@
-import { variables } from "@/assets/FilterOptions";
 import { data_cmaps, reg_cmaps } from "@/assets/colormaps";
+import { variables } from "@/assets/sharedOptions";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import * as d3 from "d3";
 import L from "leaflet";

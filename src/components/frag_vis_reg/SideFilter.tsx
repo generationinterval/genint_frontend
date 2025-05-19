@@ -2,7 +2,7 @@ import {
   chr_range_marks,
   min_chr_len_marks,
   mpp_marks
-} from "@/assets/FilterOptions";
+} from "@/assets/sharedOptions";
 import { FilterState, mappingToShort, variables, } from "@/components/frag_vis_reg/fvrStatic";
 import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import {

@@ -1,3 +1,4 @@
+import { icons } from "@/assets/icons"; // Import your icons
 import {
   axis,
   bandwidth_divisor_marks,
@@ -7,8 +8,7 @@ import {
   td_bandwidth_divisor_marks,
   td_threshold_divisor_marks,
   variables
-} from "@/assets/FilterOptions";
-import { icons } from "@/assets/icons"; // Import your icons
+} from "@/assets/sharedOptions";
 import { checkboxBoxStyles } from "@/assets/styles";
 import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";

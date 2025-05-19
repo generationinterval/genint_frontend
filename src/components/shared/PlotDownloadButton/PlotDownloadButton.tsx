@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import DownloadIcon from "@mui/icons-material/Download";
 import { Button, Menu, MenuItem, useTheme } from "@mui/material";
 import { saveAs } from "file-saver";
-import DownloadIcon from "@mui/icons-material/Download";
+import React, { useState } from "react";
 
 // Define props for the component
 interface PlotDownloadButtonProps {
@@ -73,9 +73,9 @@ const PlotDownloadButton: React.FC<PlotDownloadButtonProps> = ({
         variant="contained"
         color="primary"
         style={{
-          width: "40px",
-          height: "40px",
-          minWidth: "40px",
+          width: "35px",
+          height: "35px",
+          minWidth: "35px",
           borderRadius: "8px",
           padding: 0,
           backgroundColor: theme.palette.primary.main, // Use theme color

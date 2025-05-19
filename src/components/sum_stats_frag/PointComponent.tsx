@@ -1,9 +1,9 @@
-import React, { useRef, useEffect, useCallback } from "react";
-import * as d3 from "d3";
-import { variables } from "@/assets/FilterOptions";
-import * as jStat from "jstat";
+import { anc_cmaps, data_cmaps, reg_cmaps } from "@/assets/colormaps";
+import { variables } from "@/assets/sharedOptions";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
-import { data_cmaps, reg_cmaps, anc_cmaps } from "@/assets/colormaps";
+import * as d3 from "d3";
+import * as jStat from "jstat";
+import React, { useCallback, useEffect, useRef } from "react";
 
 type PointPlotProps = {
   data: any[];
@@ -70,9 +70,9 @@ const createColorScale = (
 
     legendData = isExtentValid
       ? [
-          { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
-          { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
-        ]
+        { label: `Min: ${extent[0]}`, color: colorScale(extent[0]!), extent },
+        { label: `Max: ${extent[1]}`, color: colorScale(extent[1]!), extent },
+      ]
       : [{ label: "No valid data", color: "steelblue" }]; // If extent is invalid
     discreteOrContinuous = "continuous";
     globalColorOrder = []; // Continuous variables don't have a strict "order" per se
@@ -95,7 +95,7 @@ const createColorScale = (
     legendData = uniqueValues.map((value) => ({
       label:
         variables.mappingToLong[
-          value as keyof typeof variables.mappingToLong
+        value as keyof typeof variables.mappingToLong
         ] || value,
       color: dataColorScale(String(value)),
     }));
@@ -123,7 +123,7 @@ const createColorScale = (
     legendData = uniqueValues.map((value) => ({
       label:
         variables.mappingToLong[
-          value as keyof typeof variables.mappingToLong
+        value as keyof typeof variables.mappingToLong
         ] || value,
       color: regColorScale(String(value)),
     }));
@@ -152,7 +152,7 @@ const createColorScale = (
     legendData = uniqueValues.map((value) => ({
       label:
         variables.mappingToLong[
-          value as keyof typeof variables.mappingToLong
+        value as keyof typeof variables.mappingToLong
         ] || value,
       color: ancColorScale(String(value)),
     }));
@@ -186,7 +186,7 @@ const createColorScale = (
     legendData = uniqueValues.map((value) => ({
       label:
         variables.mappingToLong[
-          value as keyof typeof variables.mappingToLong
+        value as keyof typeof variables.mappingToLong
         ] || String(value),
       color: colorScale(value),
     }));
@@ -321,8 +321,7 @@ const drawPoints = (
           .on("mouseenter", () => {
             tooltip.transition().duration(200).style("opacity", 1); // Show tooltip
             tooltip.html(
-              `<strong>Group:</strong> ${
-                groupData[0].color
+              `<strong>Group:</strong> ${groupData[0].color
               }<br/><strong>Mean X:</strong> ${mean_x.toFixed(2)}`
             );
           })
@@ -349,8 +348,7 @@ const drawPoints = (
           .on("mouseenter", () => {
             tooltip.transition().duration(200).style("opacity", 1);
             tooltip.html(
-              `<strong>Group:</strong> ${
-                groupData[0].color
+              `<strong>Group:</strong> ${groupData[0].color
               }<br/><strong>Median X:</strong> ${median_x.toFixed(2)}`
             );
           })
@@ -388,8 +386,7 @@ const drawPoints = (
           .on("mouseenter", () => {
             tooltip.transition().duration(200).style("opacity", 1); // Show tooltip
             tooltip.html(
-              `<strong>Group:</strong> ${
-                groupData[0].color
+              `<strong>Group:</strong> ${groupData[0].color
               }<br/><strong>Mean Y:</strong> ${mean_y.toFixed(2)}`
             );
           })
@@ -416,8 +413,7 @@ const drawPoints = (
           .on("mouseenter", () => {
             tooltip.transition().duration(200).style("opacity", 1);
             tooltip.html(
-              `<strong>Group:</strong> ${
-                groupData[0].color
+              `<strong>Group:</strong> ${groupData[0].color
               }<br/><strong>Median Y:</strong> ${median_y.toFixed(2)}`
             );
           })
@@ -886,26 +882,24 @@ const fullPoints = (
           .append("g")
           .attr(
             "transform",
-            `translate(${
-              margin.left +
-              (i * plotWidth +
-                i * (colPadding / 2) +
-                (i + 1) * (colPadding / 2))
-            },${
-              margin.top +
-              j * plotHeight +
-              j * (rowPadding / 2) +
-              (j + 1) * (rowPadding / 2)
+            `translate(${margin.left +
+            (i * plotWidth +
+              i * (colPadding / 2) +
+              (i + 1) * (colPadding / 2))
+            },${margin.top +
+            j * plotHeight +
+            j * (rowPadding / 2) +
+            (j + 1) * (rowPadding / 2)
             })`
           );
         const title = `${facXValue} / ${facYValue}`;
         const x_label =
           variables.mappingToLong[
-            var_x as keyof typeof variables.mappingToLong
+          var_x as keyof typeof variables.mappingToLong
           ];
         const y_label =
           variables.mappingToLong[
-            var_y as keyof typeof variables.mappingToLong
+          var_y as keyof typeof variables.mappingToLong
           ];
         drawPoints(
           facetGroup,
@@ -961,14 +955,12 @@ const fullPoints = (
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${
-          margin.left +
-          (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
-        },${
-          margin.top +
-          j * plotHeight +
-          j * (rowPadding / 2) +
-          (j + 1) * (rowPadding / 2)
+        `translate(${margin.left +
+        (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+        },${margin.top +
+        j * plotHeight +
+        j * (rowPadding / 2) +
+        (j + 1) * (rowPadding / 2)
         })
           `
       );
@@ -1031,14 +1023,12 @@ const fullPoints = (
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
         "transform",
-        `translate(${
-          margin.left +
-          (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
-        },${
-          margin.top +
-          j * plotHeight +
-          j * (rowPadding / 2) +
-          (j + 1) * (rowPadding / 2)
+        `translate(${margin.left +
+        (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+        },${margin.top +
+        j * plotHeight +
+        j * (rowPadding / 2) +
+        (j + 1) * (rowPadding / 2)
         })
           `
       );
@@ -1099,14 +1089,12 @@ const fullPoints = (
     // Append a group for each facet
     const facetGroup = svg.append("g").attr(
       "transform",
-      `translate(${
-        margin.left +
-        (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
-      },${
-        margin.top +
-        j * plotHeight +
-        j * (rowPadding / 2) +
-        (j + 1) * (rowPadding / 2)
+      `translate(${margin.left +
+      (i * plotWidth + i * (colPadding / 2) + (i + 1) * (colPadding / 2))
+      },${margin.top +
+      j * plotHeight +
+      j * (rowPadding / 2) +
+      (j + 1) * (rowPadding / 2)
       })
           `
     );
