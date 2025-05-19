@@ -1,11 +1,3 @@
-export const chrms_discrete = {
-  options: ["Autosome", "X", "X Prime"],
-  mapping: {
-    Autosome: "A",
-    X: "X",
-    "X Prime": "Xprime",
-  },
-};
 
 export const chrms_all = {
   options: [
