@@ -1,23 +1,29 @@
 import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
-import HistogramComponent from "@/components/sum_stats_ind/HistogramComponent";
-import "@/components/sum_stats_ind/HistogramComponent.css";
-import IDDensityComponent from "@/components/sum_stats_ind/IDDensityComponent";
-import MapComponent from "@/components/sum_stats_ind/MapComponent";
-import PointComponent from "@/components/sum_stats_ind/PointComponent";
-import SideFilter from "@/components/sum_stats_ind/SideFilter";
-import { FilterState } from "@/components/sum_stats_ind/ssiStatic";
-import TDDensityComponent from "@/components/sum_stats_ind/TDDensityComponent";
-import ViolinComponent from "@/components/sum_stats_ind/ViolinComponent";
+import HistogramComponent from "@/pages/sum_stats_ind/components/HistogramComponent";
+import IDDensityComponent from "@/pages/sum_stats_ind/components/IDDensityComponent";
+import MapComponent from "@/pages/sum_stats_ind/components/MapComponent";
+import PointComponent from "@/pages/sum_stats_ind/components/PointComponent";
+import SideFilter from "@/pages/sum_stats_ind/components/SideFilter";
+import TDDensityComponent from "@/pages/sum_stats_ind/components/TDDensityComponent";
+import ViolinComponent from "@/pages/sum_stats_ind/components/ViolinComponent";
+import { FilterState, mappingToLong } from "@/pages/sum_stats_ind/static/ssiStatic";
+import "@/pages/sum_stats_ind/style/HistogramComponent.css";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import DownloadIcon from "@mui/icons-material/Download";
 import ImageIcon from "@mui/icons-material/Image";
 import TocIcon from "@mui/icons-material/Toc";
-import { Button, Grid } from "@mui/material";
-import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import { Button, Checkbox, Grid, ListItemText, Menu, MenuItem } from "@mui/material";
+import { AllCommunityModule, ClientSideRowModelModule, ColDef, ColGroupDef, GridApi, GridReadyEvent, ModuleRegistry, ValueFormatterParams } from 'ag-grid-community';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
+import { AgGridReact } from "ag-grid-react";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import React, { useEffect, useRef, useState } from "react";
+
+
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 export const SummStatInd: React.FC = () => {
   const [viewTabValue, setViewTabValue] = useState(0);
@@ -72,10 +78,7 @@ export const SummStatInd: React.FC = () => {
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
   const [loading, setLoading] = useState(false); // To handle loading state
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 10, // Default page size
-  });
+
   useEffect(() => {
     if (filters.plot) {
       applyFilters();
@@ -117,6 +120,7 @@ export const SummStatInd: React.FC = () => {
     } finally {
       setLoading(false);
     }
+    console.log("Data fetched:", data);
   };
   const handleViewTabChange = (
     event: React.SyntheticEvent,
@@ -170,63 +174,196 @@ export const SummStatInd: React.FC = () => {
 
     img.src = url; // Set image source to the URL
   };
-  const columns: GridColDef[] = [
+  const scientificFormatter = (params: ValueFormatterParams) => {
+    const raw = params.value as number | null | undefined;
+    if (raw == null || isNaN(raw)) return '';
+
+    const abs = Math.abs(raw);
+    // tune these thresholds to taste:
+    const useSci = (abs !== 0 && (abs >= 1e6 || abs < 1e-4));
+
+    return useSci
+      ? raw.toExponential(4)    // e.g. 1.2345e+7
+      : raw.toFixed(4);          // e.g. 123.4567
+  };
+  const translateFormatter = (params: ValueFormatterParams) => {
+    const raw = params.value;
+    if (raw == null) return "0";
+    const key = String(raw);
+    return (mappingToLong as Record<string, string>)[key] ?? key;
+  };
+  const columns: (ColDef | ColGroupDef)[] = [
+    // — always visible —
     {
-      field: "lin",
-      headerName: "Individual_Dataset",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Individual", field: "ind", flex: 1, valueFormatter: translateFormatter, filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "ind",
-      headerName: "Individual",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Dataset", field: "dat", flex: 1, valueFormatter: translateFormatter, filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "dat",
-      headerName: "Data",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Original Dataset", field: "oda", flex: 1, valueFormatter: translateFormatter, filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "chrom",
-      headerName: "Chromosome",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Region", field: "reg", flex: 1, valueFormatter: translateFormatter, filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "anc",
-      headerName: "Ancestry",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Population", field: "pop", flex: 1, valueFormatter: translateFormatter, filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "hap",
-      headerName: "Haplotype",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Haplotype", field: "hap", flex: 1, valueFormatter: translateFormatter, filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "len_mea",
-      headerName: "Mean Length (bp)",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Sex", field: "sex", flex: 1, valueFormatter: translateFormatter, filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "len_med",
-      headerName: "Median Length (bp)",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Mean Length (bp)", field: "len_mea", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter
     },
     {
-      field: "seq",
-      headerName: "Sequence",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Median Length (bp)", field: "len_med", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter
     },
-    // Add more columns as needed
+
+    // — ancestry group (all hidden by default) —
+    {
+      headerName: "Ancestry Details",
+      children: [
+        {
+          headerName: "Ancestry", field: "anc", flex: 1,
+          filter: 'agNumberColumnFilter',
+          valueFormatter: scientificFormatter, hide: true
+        },
+        {
+          headerName: "Anc‑AFR", field: "ancAFR", flex: 1,
+          filter: 'agNumberColumnFilter',
+          valueFormatter: scientificFormatter, hide: true
+        },
+        {
+          headerName: "Anc‑AMR", field: "ancAMR", flex: 1,
+          filter: 'agNumberColumnFilter',
+          valueFormatter: scientificFormatter, hide: true
+        },
+        {
+          headerName: "Anc‑EAS", field: "ancEAS", flex: 1,
+          filter: 'agNumberColumnFilter',
+          valueFormatter: scientificFormatter, hide: true
+        },
+        {
+          headerName: "Anc‑EUR", field: "ancEUR", flex: 1,
+          filter: 'agNumberColumnFilter',
+          valueFormatter: scientificFormatter, hide: true
+        },
+        {
+          headerName: "Anc‑OCE", field: "ancOCE", flex: 1,
+          filter: 'agNumberColumnFilter',
+          valueFormatter: scientificFormatter, hide: true
+        },
+        {
+          headerName: "Anc‑SAS", field: "ancSAS", flex: 1,
+          filter: 'agNumberColumnFilter',
+          valueFormatter: scientificFormatter, hide: true
+        },
+      ]
+    },
+
+    // — all other columns hidden by default —
+    {
+      headerName: "Chromosome", field: "chrom", flex: 1, valueFormatter: translateFormatter, hide: true, filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
+    },
+    {
+      headerName: "Latitude", field: "lat", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Longitude", field: "lon", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Max Length (bp)", field: "len_max", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Min Length (bp)", field: "len_min", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "N Fragments", field: "nfr", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Sequence", field: "seq", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Time", field: "tim", flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
   ];
+  // keep a ref to the grid API
+  const gridApiRef = useRef<GridApi | null>(null);
+
+  // for controlling the columns‑menu popover
+  const [colMenuAnchor, setColMenuAnchor] = useState<null | HTMLElement>(null);
+
+  // open/close handlers
+  const openColMenu = (e: React.MouseEvent<HTMLElement>) => setColMenuAnchor(e.currentTarget);
+  const closeColMenu = () => setColMenuAnchor(null);
+
+  // toggle visibility helper
+  const toggleColumn = (colId: string) => {
+    const api = gridApiRef.current;
+    if (!api) return;
+
+    // get the Column object
+    const col = api.getColumn(colId);
+    const currentlyVisible = col?.isVisible() ?? false;
+
+    // flip it
+    api.setColumnsVisible([colId], !currentlyVisible);
+  };
+
+
   return (
     <Grid
       container
@@ -389,7 +526,7 @@ export const SummStatInd: React.FC = () => {
             <div
               style={{
                 position: "absolute",
-                bottom: "10px",
+                bottom: "4px",
                 right: "45px", // Position in the lower right corner
                 display: "flex",
                 flexDirection: "row",
@@ -403,9 +540,9 @@ export const SummStatInd: React.FC = () => {
                 variant="contained"
                 color="primary"
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  minWidth: "40px",
+                  width: "35px",
+                  height: "35px",
+                  minWidth: "35px",
                   borderRadius: "8px",
                   padding: 0,
                 }}
@@ -426,23 +563,26 @@ export const SummStatInd: React.FC = () => {
               position: "relative",
             }}
           >
-            <DataGrid
-              className="custom-data-grid"
-              rows={data}
-              columns={columns}
-              pagination
-              autoPageSize // Automatically calculate the number of rows based on the container's height
-              getRowId={(row) => `${row.lin}_${row.hap}_${row.anc}`}
-
-            // Ensure correct row identification
-            />
+            <div className="ag-theme-alpine" style={{ width: "100%", height: "100%" }}>
+              <AgGridReact
+                onGridReady={(params: GridReadyEvent) => {
+                  gridApiRef.current = params.api;
+                }}
+                pagination={true}
+                paginationAutoPageSize={true}
+                columnDefs={columns}
+                rowData={data}
+                modules={[ClientSideRowModelModule]}
+                paginationPageSizeSelector={false}
+              />
+            </div>
 
             {/* Positioned Buttons for CSV and Plot View */}
             <div
               className="button-container"
               style={{
                 position: "absolute",
-                bottom: "10px",
+                bottom: "4px",
                 right: "45px",
                 display: "flex",
                 flexDirection: "row",
@@ -457,9 +597,9 @@ export const SummStatInd: React.FC = () => {
                 variant="contained"
                 color="primary"
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  minWidth: "40px",
+                  width: "35px",
+                  height: "35px",
+                  minWidth: "35px",
                   borderRadius: "8px",
                   padding: 0,
                 }}
@@ -471,16 +611,53 @@ export const SummStatInd: React.FC = () => {
                 variant="contained"
                 color="primary"
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  minWidth: "40px",
+                  width: "35px",
+                  height: "35px",
+                  minWidth: "35px",
                   borderRadius: "8px",
                   padding: 0,
                 }}
               >
                 <ImageIcon style={{ color: "#FFFFFF" }} />
               </Button>
+              {/* Column‑selector, now as a Button */}
+              <Button
+                onClick={openColMenu}
+                variant="contained"
+                color="primary"
+                style={{
+                  width: "35px",
+                  height: "35px",
+                  minWidth: "35px",
+                  borderRadius: "8px",
+                  padding: 0,
+                }}
+              >
+                <ViewColumnIcon style={{ color: "#FFFFFF" }} />
+              </Button>
+
+              {/* the Menu itself stays the same */}
+              <Menu
+                anchorEl={colMenuAnchor}
+                open={Boolean(colMenuAnchor)}
+                onClose={closeColMenu}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+              >
+                {columns.flatMap(col => {
+                  if ((col as ColGroupDef).children) return [];
+                  const def = col as ColDef;
+                  const id = def.field!;
+                  return (
+                    <MenuItem key={id} dense onClick={() => toggleColumn(id)}>
+                      <Checkbox checked={!def.hide} size="small" />
+                      <ListItemText primary={def.headerName} />
+                    </MenuItem>
+                  );
+                })}
+              </Menu>
             </div>
+
           </Grid>
         )}
         {!loading && !isFiltersApplied && <div>No data to display yet.</div>}
