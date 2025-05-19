@@ -122,12 +122,7 @@ export const SummStatInd: React.FC = () => {
     }
     console.log("Data fetched:", data);
   };
-  const handleViewTabChange = (
-    event: React.SyntheticEvent,
-    newValue: number
-  ) => {
-    setViewTabValue(newValue);
-  };
+
   // Function to download data as CSV
   const handleDownloadCSV = () => {
     const csv = Papa.unparse(data);
@@ -143,37 +138,7 @@ export const SummStatInd: React.FC = () => {
   const handleOpenPlot = () => {
     setViewTabValue(0); // Set tab to Visualization view
   };
-  const handleDownloadPlot = () => {
-    const svgElement = plotRef.current?.querySelector("svg"); // Get the SVG element
-    if (!svgElement) return;
 
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svgElement); // Serialize SVG to string
-    const svgBlob = new Blob([svgString], {
-      type: "image/svg+xml;charset=utf-8",
-    });
-    const url = URL.createObjectURL(svgBlob); // Create URL from the SVG blob
-
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = svgElement.clientWidth;
-      canvas.height = svgElement.clientHeight;
-      const ctx = canvas.getContext("2d");
-
-      if (ctx) {
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            saveAs(blob, "plot.png"); // Save as PNG using file-saver
-          }
-          URL.revokeObjectURL(url); // Clean up the URL object
-        });
-      }
-    };
-
-    img.src = url; // Set image source to the URL
-  };
   const scientificFormatter = (params: ValueFormatterParams) => {
     const raw = params.value as number | null | undefined;
     if (raw == null || isNaN(raw)) return '';
