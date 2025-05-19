@@ -1,5 +1,6 @@
 import { anc_cmaps, data_cmaps, reg_cmaps } from "@/assets/colormaps";
 import { variables } from "@/assets/sharedOptions";
+import { mappingToLong, } from "@/pages/sum_stats_ind/static/ssiStatic";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import * as d3 from "d3";
 import * as jStat from "jstat";
@@ -203,9 +204,16 @@ const drawPoints = (
   data: DataPoint[],
   xScale: d3.ScaleLinear<number, number>,
   yScale: d3.ScaleLinear<number, number>,
+  x_axis: string,
+  min_x_axis: number,
+  max_x_axis: number,
+  all_min_x_axis: number,
+  all_max_x_axis: number,
   y_axis: string,
   min_y_axis: number,
   max_y_axis: number,
+  all_min_y_axis: number,
+  all_max_y_axis: number,
   plotHeight: number,
   plotWidth: number,
   var_x: string,
@@ -229,11 +237,33 @@ const drawPoints = (
     )
     .range([0, plotWidth])
     .nice();
+  if (x_axis === "Define Range") {
+    xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
+  } else if (x_axis === "Shared Axis") {
+    const buffer = (all_max_x_axis - all_min_x_axis) * 0.05;
+    xScale
+      .domain([all_min_x_axis - buffer, all_max_x_axis + buffer])
+  } else if (x_axis === "Free Axis") {
+    xScale
+      .domain(
+        d3.extent(data, (d) => d[var_x as keyof DataPoint] as number) as [
+          number,
+          number
+        ]
+      )
+      .range([0, plotWidth])
+      .nice();
+  }
+
+
 
   if (y_axis === "Define Range") {
     yScale.domain([min_y_axis, max_y_axis]).range([plotHeight, 0]);
   } else if (y_axis === "Shared Axis") {
-    throw new Error("Shared Axis is not supported for y-axis.");
+    const buffer = (all_max_y_axis - all_min_y_axis) * 0.05;
+    yScale
+      .domain([all_min_y_axis - buffer, all_max_y_axis + buffer])
+      .range([plotHeight, 0]);
   } else if (y_axis === "Free Axis") {
     yScale
       .domain(
@@ -245,7 +275,7 @@ const drawPoints = (
       .range([plotHeight, 0])
       .nice();
   }
-
+  const displayTitle = mappingToLong[title as keyof typeof mappingToLong] ?? title;
   // Draw scatter plot points
   facetGroup
     .selectAll("circle")
@@ -286,7 +316,9 @@ const drawPoints = (
     .attr("x", plotWidth / 2)
     .attr("y", -5)
     .attr("text-anchor", "middle")
-    .text(`${title}`);
+    .text(`${displayTitle}`);
+
+
 
   // Draw mean and median lines if showMeanMedian_x or showMeanMedian_y is true
   if (showMeanMedian_x || showMeanMedian_y) {
@@ -565,9 +597,6 @@ const PointComponent: React.FC<PointPlotProps> = ({
     }
   }, [
     data,
-    col,
-    var_x_mapped,
-    var_y_mapped,
     mea_med_x,
     mea_med_y,
     x_axis,
@@ -601,9 +630,6 @@ const PointComponent: React.FC<PointPlotProps> = ({
     }
   }, [
     data,
-    col,
-    var_x_mapped,
-    var_y_mapped,
     mea_med_x,
     mea_med_y,
     x_axis,
@@ -705,7 +731,26 @@ const fullPoints = (
   const margin = { top: 0, right: 0, bottom: 60, left: 50 };
   const width = container ? container.clientWidth : 960;
   const height = container ? container.clientHeight : 600;
-
+  const all_max_x_axis = d3.max(
+    data,
+    (d) => d[var_x as keyof DataPoint] as number
+  )!;
+  const all_min_x_axis = d3.min(
+    data,
+    (d) => d[var_x as keyof DataPoint] as number
+  )!;
+  const all_max_y_axis = d3.max(
+    data,
+    (d) => d[var_y as keyof DataPoint] as number
+  )!;
+  const all_min_y_axis = d3.min(
+    data,
+    (d) => d[var_y as keyof DataPoint] as number
+  )!;
+  console.log("all max x axis", all_max_x_axis);
+  console.log("all min x axis", all_min_x_axis);
+  console.log("all max y axis", all_max_y_axis);
+  console.log("all min y axis", all_min_y_axis);
   const { getColor, legendData, discreteOrContinuous, globalColorOrder } =
     createColorScale(data, col);
   // Extract unique values for faceting directly from the data
@@ -854,30 +899,7 @@ const fullPoints = (
         const facetData = data.filter(
           (d) => d.fac_x === facXValue && d.fac_y === facYValue
         );
-        if (x_axis === "Define Range") {
-          xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
-        } else if (x_axis === "Shared Axis") {
-          const minVal = d3.min(
-            data,
-            (d) => d[var_x as keyof DataPoint] as number
-          )!;
-          const maxVal = d3.max(
-            data,
-            (d) => d[var_x as keyof DataPoint] as number
-          )!;
-          const buffer = (maxVal - minVal) * 0.05;
 
-          xScale
-            .domain([minVal - buffer, maxVal + buffer])
-            .range([0, plotWidth]);
-        } else if (x_axis === "Free Axis") {
-          xScale
-            .domain([
-              d3.min(facetData, (d) => d[var_x as keyof DataPoint] as number)!,
-              d3.max(facetData, (d) => d[var_x as keyof DataPoint] as number)!,
-            ])
-            .range([0, plotWidth]);
-        }
         const facetGroup = svg
           .append("g")
           .attr(
@@ -906,9 +928,16 @@ const fullPoints = (
           facetData,
           xScale,
           yScale,
+          x_axis,
+          min_x_axis,
+          max_x_axis,
+          all_min_x_axis,
+          all_max_x_axis,
           y_axis,
           min_y_axis,
           max_y_axis,
+          all_min_y_axis,
+          all_max_y_axis,
           plotHeight,
           plotWidth,
           var_x,
@@ -929,28 +958,7 @@ const fullPoints = (
     uniqueFacX.forEach((facXValue, i) => {
       const facetData = data.filter((d) => d.fac_x === facXValue);
       const j = 0;
-      if (x_axis === "Define Range") {
-        xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
-      } else if (x_axis === "Shared Axis") {
-        const minVal = d3.min(
-          data,
-          (d) => d[var_x as keyof DataPoint] as number
-        )!;
-        const maxVal = d3.max(
-          data,
-          (d) => d[var_x as keyof DataPoint] as number
-        )!;
-        const buffer = (maxVal - minVal) * 0.05;
 
-        xScale.domain([minVal - buffer, maxVal + buffer]).range([0, plotWidth]);
-      } else if (x_axis === "Free Axis") {
-        xScale
-          .domain([
-            d3.min(facetData, (d) => d[var_x as keyof DataPoint] as number)!,
-            d3.max(facetData, (d) => d[var_x as keyof DataPoint] as number)!,
-          ])
-          .range([0, plotWidth]);
-      }
 
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
@@ -975,9 +983,16 @@ const fullPoints = (
         facetData,
         xScale,
         yScale,
+        x_axis,
+        min_x_axis,
+        max_x_axis,
+        all_min_x_axis,
+        all_max_x_axis,
         y_axis,
         min_y_axis,
         max_y_axis,
+        all_min_y_axis,
+        all_max_y_axis,
         plotHeight,
         plotWidth,
         var_x,
@@ -997,28 +1012,7 @@ const fullPoints = (
     uniqueFacY.forEach((facYValue, j) => {
       const facetData = data.filter((d) => d.fac_y === facYValue);
       const i = 0;
-      if (x_axis === "Define Range") {
-        xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
-      } else if (x_axis === "Shared Axis") {
-        const minVal = d3.min(
-          data,
-          (d) => d[var_x as keyof DataPoint] as number
-        )!;
-        const maxVal = d3.max(
-          data,
-          (d) => d[var_x as keyof DataPoint] as number
-        )!;
-        const buffer = (maxVal - minVal) * 0.05;
 
-        xScale.domain([minVal - buffer, maxVal + buffer]).range([0, plotWidth]);
-      } else if (x_axis === "Free Axis") {
-        xScale
-          .domain([
-            d3.min(facetData, (d) => d[var_x as keyof DataPoint] as number)!,
-            d3.max(facetData, (d) => d[var_x as keyof DataPoint] as number)!,
-          ])
-          .range([0, plotWidth]);
-      }
 
       // Append a group for each facet
       const facetGroup = svg.append("g").attr(
@@ -1043,9 +1037,16 @@ const fullPoints = (
         facetData,
         xScale,
         yScale,
+        x_axis,
+        min_x_axis,
+        max_x_axis,
+        all_min_x_axis,
+        all_max_x_axis,
         y_axis,
         min_y_axis,
         max_y_axis,
+        all_min_y_axis,
+        all_max_y_axis,
         plotHeight,
         plotWidth,
         var_x,
@@ -1063,28 +1064,7 @@ const fullPoints = (
   } else {
     const i = 0;
     const j = 0;
-    if (x_axis === "Define Range") {
-      xScale.domain([min_x_axis, max_x_axis]).range([0, plotWidth]);
-    } else if (x_axis === "Shared Axis") {
-      const minVal = d3.min(
-        data,
-        (d) => d[var_x as keyof DataPoint] as number
-      )!;
-      const maxVal = d3.max(
-        data,
-        (d) => d[var_x as keyof DataPoint] as number
-      )!;
-      const buffer = (maxVal - minVal) * 0.05;
 
-      xScale.domain([minVal - buffer, maxVal + buffer]).range([0, plotWidth]);
-    } else if (x_axis === "Free Axis") {
-      xScale
-        .domain([
-          d3.min(data, (d) => d[var_x as keyof DataPoint] as number)!,
-          d3.max(data, (d) => d[var_x as keyof DataPoint] as number)!,
-        ])
-        .range([0, plotWidth]);
-    }
 
     // Append a group for each facet
     const facetGroup = svg.append("g").attr(
@@ -1108,9 +1088,16 @@ const fullPoints = (
       data,
       xScale,
       yScale,
+      x_axis,
+      min_x_axis,
+      max_x_axis,
+      all_min_x_axis,
+      all_max_x_axis,
       y_axis,
       min_y_axis,
       max_y_axis,
+      all_min_y_axis,
+      all_max_y_axis,
       plotHeight,
       plotWidth,
       var_x,

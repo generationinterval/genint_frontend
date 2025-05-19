@@ -378,10 +378,10 @@ const SideFilter: React.FC<SideFilterProps> = ({
           fac_y_mapped: [],
           mea_med_x: false,
           mea_med_y: false,
-          x_axis: "Free Axis",
+          x_axis: "Shared Axis",
           min_x_axis: 0,
           max_x_axis: 0,
-          y_axis: "Free Axis",
+          y_axis: "Shared Axis",
           min_y_axis: 0,
           max_y_axis: 0,
           tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP"],
@@ -587,24 +587,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     ))}
                   </Select>
                 </FormControl>
-                <Box sx={checkboxBoxStyles}>
-                  <FormControlLabel
-                    value="bottom"
-                    control={
-                      <Checkbox
-                        checked={filters.mea_med_x}
-                        size="small"
-                        onChange={handleCheckbox("mea_med_x")}
-                        disabled={filters.col_mapped.some((col) =>
-                          optionsContinuous.includes(col)
-                        )} // Disable when continuous variable is selected
-                      />
-                    }
-                    label="Mean/Median X"
-                    labelPlacement="end"
-                    sx={{ width: "100%" }}
-                  />
-                </Box>
+
               </Grid>
 
               <Grid item xs={6}>
@@ -626,24 +609,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     ))}
                   </Select>
                 </FormControl>
-                <Box sx={checkboxBoxStyles}>
-                  <FormControlLabel
-                    value="bottom"
-                    control={
-                      <Checkbox
-                        checked={filters.mea_med_y}
-                        size="small"
-                        onChange={handleCheckbox("mea_med_y")}
-                        disabled={filters.col_mapped.some((col) =>
-                          optionsContinuous.includes(col)
-                        )} // Disable when continuous variable is selected
-                      />
-                    }
-                    label="Mean/Median Y"
-                    labelPlacement="end"
-                    sx={{ width: "100%" }}
-                  />
-                </Box>
+
               </Grid>
             </>
           )}
@@ -775,21 +741,68 @@ const SideFilter: React.FC<SideFilterProps> = ({
           <Grid item xs={12}>
             {filters.plot !== "Map" && (
               <>
-                <Box sx={checkboxBoxStyles}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={filters.mea_med_1}
-                        size="small"
-                        onChange={handleCheckbox("mea_med_1")}
-                        disabled={filters.col.some((col) =>
-                          optionsContinuous.includes(col)
-                        )} // Disable when continuous variable is selected
-                      />
-                    }
-                    label="Mean/Median"
-                  />
-                </Box>
+                {tabValue !== 1 ? (
+                  <Box sx={checkboxBoxStyles}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={filters.mea_med_1}
+                          size="small"
+                          onChange={handleCheckbox("mea_med_1")}
+                          disabled={filters.col.some((col) =>
+                            optionsContinuous.includes(col)
+                          )} // Disable when continuous variable is selected
+                        />
+                      }
+                      label="Mean/Median"
+                    />
+                  </Box>
+                ) : (
+                  <>
+                    <Grid container spacing={1}>
+                      <Grid item xs={6}>
+                        <Box sx={checkboxBoxStyles}>
+                          <FormControlLabel
+                            value="bottom"
+                            control={
+                              <Checkbox
+                                checked={filters.mea_med_x}
+                                size="small"
+                                onChange={handleCheckbox("mea_med_x")}
+                                disabled={filters.col_mapped.some((col) =>
+                                  optionsContinuous.includes(col)
+                                )} // Disable when continuous variable is selected
+                              />
+                            }
+                            label="Mea/Med X"
+                            labelPlacement="end"
+                            sx={{ width: "95%" }}
+                          />
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Box sx={checkboxBoxStyles}>
+                          <FormControlLabel
+                            value="bottom"
+                            control={
+                              <Checkbox
+                                checked={filters.mea_med_y}
+                                size="small"
+                                onChange={handleCheckbox("mea_med_y")}
+                                disabled={filters.col_mapped.some((col) =>
+                                  optionsContinuous.includes(col)
+                                )} // Disable when continuous variable is selected
+                              />
+                            }
+                            label="Mea/Med Y"
+                            labelPlacement="end"
+                            sx={{ width: "95%" }}
+                          />
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </>
+                )}
 
                 {filters.plot !== "Violin" && (
                   <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
