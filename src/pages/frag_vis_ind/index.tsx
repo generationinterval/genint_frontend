@@ -1,18 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Grid } from "@mui/material";
-import SideFilter from "@/components/frag_vis_ind/SideFilter";
-import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
-import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
 import {
   ancestries_noAll,
-  chrms_all,
-  mpp_marks,
-  variables,
-  color_chrms,
-  min_chr_len_marks,
-  chr_range_marks,
-} from "@/assets/FilterOptions";
+  chrms_all
+} from "@/assets/sharedOptions";
 import ChromosomeComponent from "@/components/frag_vis_ind/ChromosomeComponent";
+import SideFilter from "@/components/frag_vis_ind/SideFilter";
+import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
+import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
+import { Grid } from "@mui/material";
+import React, { useEffect, useRef, useState } from "react";
 
 interface FilterState {
   tree_lin: string[];
