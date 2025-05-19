@@ -7,8 +7,6 @@ import "@/responsive.css";
 
 import "@/layout/layout.css";
 
-import "@/components/sum_stats_ind/HistogramComponent.css";
-import "@/components/sum_stats_ind/SideFilter.css";
 
 function App() {
   return (

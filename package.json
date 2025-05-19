@@ -18,6 +18,8 @@
     "@mui/x-data-grid": "^7.21.0",
     "@mui/x-tree-view": "^7.19.0",
     "@phosphor-icons/react": "^2.1.7",
+    "ag-grid-community": "^33.2.4",
+    "ag-grid-react": "^33.2.4",
     "d3": "^7.9.0",
     "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",

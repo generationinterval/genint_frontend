@@ -13,6 +13,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.ag-theme-alpine .ag-paging-panel {
+  width: 100%;
+  /* make the panel span the full grid width */
+  display: flex !important;
+  justify-content: center !important;
+  /* center its contents */
+}
+
 html,
 body {
   height: 100%;

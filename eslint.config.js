@@ -14,6 +14,7 @@ export default [
   // Add these rules to your configuration
   {
     rules: {
+      "react/react-in-jsx-scope": "off",
       "no-unused-vars": "off", // Disable the base ESLint unused vars rule
       "@typescript-eslint/no-unused-vars": "warn", // Enable TypeScript-specific unused vars rule with warning level
       "@typescript-eslint/no-explicit-any": "warn"
