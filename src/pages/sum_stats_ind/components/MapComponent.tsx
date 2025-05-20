@@ -12,7 +12,7 @@ interface JitteredDataPoint extends DataPoint {
 }
 
 interface MapComponentProps {
-  data: JitteredDataPoint[];
+  data: DataPoint[];
   col: string;
   col_unmapped: string;
   map_data: boolean;
@@ -27,7 +27,7 @@ interface MapComponentProps {
 }
 
 const createColorScale = (
-  data: JitteredDataPoint[],
+  data: DataPoint[],
   col: string
 ): {
   getColor: (d: JitteredDataPoint) => string;
@@ -166,7 +166,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   });
 
   // now memoize:
-  const jitteredData = React.useMemo(() => {
+  const jitteredData = React.useMemo<JitteredDataPoint[]>(() => {
     // runs *only* when data, map_lat_jit or map_lon_jit change
     return data.map(d => {
       const { jitterLat, jitterLon } = applyJitter(

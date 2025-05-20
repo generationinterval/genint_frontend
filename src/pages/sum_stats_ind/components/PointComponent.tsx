@@ -7,7 +7,7 @@ import * as jStat from "jstat";
 import React, { useCallback, useEffect, useRef } from "react";
 
 type PointPlotProps = {
-  data: any[];
+  data: DataPoint[];
   var_x_mapped: string;
   var_y_mapped: string;
   col: string[];
