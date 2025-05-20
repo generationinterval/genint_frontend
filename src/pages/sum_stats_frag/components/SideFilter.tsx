@@ -12,6 +12,7 @@ import {
 import { checkboxBoxStyles } from "@/assets/styles";
 import MultipleSelectChip from "@/components/shared/MultipleSelect/multipleselect";
 import { GmailTreeViewWithText } from "@/components/shared/TreeSelect/TreeSelect";
+import "@/pages/sum_stats_frag/style/SideFilter.css";
 import {
   Box,
   Button,
@@ -30,7 +31,6 @@ import {
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
 import React from "react";
-import "./SideFilter.css";
 
 interface FilterStateSumStatFrag {
   var_1: string;
@@ -303,7 +303,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           y_axis: "Shared Axis",
           min_y_axis: 0,
           max_y_axis: 0,
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP", "PH_AytaMB-02_AYTA"],
+          tree_lin: ['HG01879_DATA', 'HG01959_DATA', 'HG02108_DATA', 'HG01884_PDAT', 'HG01885_PDAT'],
           bandwidth_divisor: 30,
         };
       case "Density":
@@ -338,7 +338,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           y_axis: "Free Axis",
           min_y_axis: 0,
           max_y_axis: 0,
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP", "PH_AytaMB-02_AYTA"],
+          tree_lin: ['HG01879_DATA', 'HG01959_DATA', 'HG02108_DATA', 'HG01884_PDAT', 'HG01885_PDAT'],
           bandwidth_divisor: 10,
         };
       case "Histogram":
@@ -412,7 +412,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           y_axis: "Free Axis",
           min_y_axis: 0,
           max_y_axis: 0,
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP", "PH_AytaMB-02_AYTA"],
+          tree_lin: ['HG01879_DATA', 'HG01959_DATA', 'HG02108_DATA', 'HG01884_PDAT', 'HG01885_PDAT'],
         };
       case "Points":
         return {
@@ -439,7 +439,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           y_axis: "Free Axis",
           min_y_axis: 0,
           max_y_axis: 0,
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP", "PH_AytaMB-02_AYTA"],
+          tree_lin: ['HG01879_DATA', 'HG01959_DATA', 'HG02108_DATA', 'HG01884_PDAT', 'HG01885_PDAT'],
         };
       case "2D Density":
         return {
@@ -466,7 +466,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
           y_axis: "Define Range",
           min_y_axis: -10,
           max_y_axis: 50,
-          tree_lin: ["HGDP00535_HGDP", "HGDP00535_PGNO", "HG02351_1KGP", "PH_AytaMB-02_AYTA"],
+          tree_lin: ['HG01879_DATA', 'HG01959_DATA', 'HG02108_DATA', 'HG01884_PDAT', 'HG01885_PDAT'],
           bandwidth_divisor: 10,
           thresholds: 10,
         };

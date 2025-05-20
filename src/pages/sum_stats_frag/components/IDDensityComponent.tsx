@@ -3,7 +3,7 @@ import { variables } from "@/assets/sharedOptions";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import * as d3 from "d3";
 import React, { useCallback, useEffect, useRef } from "react";
-import { kernelDensityEstimator, kernelEpanechnikov } from "./densityUtils";
+import { kernelDensityEstimator, kernelEpanechnikov } from "../static/densityUtils";
 
 
 type IDDensityPlotProps = {

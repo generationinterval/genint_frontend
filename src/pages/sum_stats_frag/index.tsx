@@ -1,60 +1,33 @@
 import PlotDownloadButton from "@/components/shared/PlotDownloadButton/PlotDownloadButton";
 import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
-import HistogramComponent from "@/components/sum_stats_frag/HistogramComponent";
-import "@/components/sum_stats_frag/HistogramComponent.css";
-import IDDensityComponent from "@/components/sum_stats_frag/IDDensityComponent";
-import PointComponent from "@/components/sum_stats_frag/PointComponent";
-import SideFilter from "@/components/sum_stats_frag/SideFilter";
-import TDDensityComponent from "@/components/sum_stats_frag/TDDensityComponent";
-import ViolinComponent from "@/components/sum_stats_frag/ViolinComponent";
+import HistogramComponent from "@/pages/sum_stats_frag/components/HistogramComponent";
+import IDDensityComponent from "@/pages/sum_stats_frag/components/IDDensityComponent";
+import PointComponent from "@/pages/sum_stats_frag/components/PointComponent";
+import SideFilter from "@/pages/sum_stats_frag/components/SideFilter";
+import TDDensityComponent from "@/pages/sum_stats_frag/components/TDDensityComponent";
+import ViolinComponent from "@/pages/sum_stats_frag/components/ViolinComponent";
+import { FilterState, mappingToLong } from "@/pages/sum_stats_frag/static/ssfStatic";
+import "@/pages/sum_stats_frag/style/HistogramComponent.css";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import DownloadIcon from "@mui/icons-material/Download";
 import ImageIcon from "@mui/icons-material/Image";
 import TocIcon from "@mui/icons-material/Toc";
-import { Button, Grid } from "@mui/material";
-import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import { Button, Checkbox, Grid, ListItemText, Menu, MenuItem } from "@mui/material";
+import { AllCommunityModule, ClientSideRowModelModule, ColDef, ColGroupDef, GridApi, GridReadyEvent, ModuleRegistry, ValueFormatterParams } from 'ag-grid-community';
+import { AgGridReact } from "ag-grid-react";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import React, { useEffect, useRef, useState } from "react";
-interface FilterStateSumStatFrag {
-  var_1: string;
-  var_1_mapped: string;
-  mpp_1: number;
-  chrms_1: string[];
-  chrms_1_mapped: string[];
-  ancs_1: string[];
-  ancs_1_mapped: string[];
-  var_2_1: string;
-  var_2_1_mapped: string;
-  var_2_2: string;
-  var_2_2_mapped: string;
-  col: string[];
-  col_mapped: string[];
-  fac_x: string[];
-  fac_x_mapped: string[];
-  fac_y: string[];
-  fac_y_mapped: string[];
-  mea_med_1: boolean;
-  mea_med_x: boolean;
-  mea_med_y: boolean;
-  plot: string;
-  n_bins: number;
-  x_axis: string;
-  min_x_axis: number;
-  max_x_axis: number;
-  y_axis: string;
-  min_y_axis: number;
-  max_y_axis: number;
-  tree_lin: string[];
-  bandwidth_divisor: number;
-  thresholds: number;
-}
+
+
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 export const SummStatFrag: React.FC = () => {
   const [viewTabValue, setViewTabValue] = useState(0);
   const [tabValue, setTabValue] = useState(0);
   const { isSidebarVisible } = useSidebar();
-  const [filters, setFilters] = useState<FilterStateSumStatFrag>({
+  const [filters, setFilters] = useState<FilterState>({
     var_1: "",
     var_1_mapped: "",
     mpp_1: 0.5,
@@ -90,10 +63,7 @@ export const SummStatFrag: React.FC = () => {
   const [data, setData] = useState<DataPoint[]>([]); // For holding the fetched data
   const [isFiltersApplied, setIsFiltersApplied] = useState(false); // To check if filters are applied
   const [loading, setLoading] = useState(false); // To handle loading state
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 10, // Default page size
-  });
+
   useEffect(() => {
     if (filters.plot) {
       applyFilters();
@@ -132,12 +102,7 @@ export const SummStatFrag: React.FC = () => {
       setLoading(false);
     }
   };
-  const handleViewTabChange = (
-    event: React.SyntheticEvent,
-    newValue: number
-  ) => {
-    setViewTabValue(newValue);
-  };
+
   // Function to download data as CSV
   const handleDownloadCSV = () => {
     const csv = Papa.unparse(data);
@@ -153,94 +118,214 @@ export const SummStatFrag: React.FC = () => {
   const handleOpenPlot = () => {
     setViewTabValue(0); // Set tab to Visualization view
   };
-  const handleDownloadPlot = () => {
-    const svgElement = plotRef.current?.querySelector("svg"); // Get the SVG element
-    if (!svgElement) return;
 
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svgElement); // Serialize SVG to string
-    const svgBlob = new Blob([svgString], {
-      type: "image/svg+xml;charset=utf-8",
-    });
-    const url = URL.createObjectURL(svgBlob); // Create URL from the SVG blob
-
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = svgElement.clientWidth;
-      canvas.height = svgElement.clientHeight;
-      const ctx = canvas.getContext("2d");
-
-      if (ctx) {
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            saveAs(blob, "plot.png"); // Save as PNG using file-saver
-          }
-          URL.revokeObjectURL(url); // Clean up the URL object
-        });
-      }
-    };
-
-    img.src = url; // Set image source to the URL
+  const scientificFormatter = (params: ValueFormatterParams) => {
+    const raw = params.value as number | null | undefined;
+    if (raw == null || isNaN(raw)) return '';
+    const abs = Math.abs(raw);
+    const useSci = (abs !== 0 && (abs >= 1e6 || abs < 1e-4));
+    return useSci
+      ? raw.toExponential(4)
+      : raw.toFixed(4);
   };
-  const columns: GridColDef[] = [
+  const translateFormatter = (params: ValueFormatterParams) => {
+    const raw = params.value;
+    if (raw == null) return "0";
+    const key = String(raw);
+    return (mappingToLong as Record<string, string>)[key] ?? key;
+  };
+
+  const columns: (ColDef | ColGroupDef)[] = [
+    // — always visible string/text columns —
     {
-      field: "lin",
-      headerName: "Individual_Dataset",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
-    },
-    {
-      field: "ind",
       headerName: "Individual",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      field: "ind",
+      flex: 1,
+      valueFormatter: translateFormatter,
+      filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
+      headerName: "Dataset",
       field: "dat",
-      headerName: "Data",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      flex: 1,
+      valueFormatter: translateFormatter,
+      filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "chrom",
+      headerName: "Original dataset",
+      field: "oda",
+      flex: 1,
+      valueFormatter: translateFormatter,
+      filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
+    },
+    {
+      headerName: "Region",
+      field: "reg",
+      flex: 1,
+      valueFormatter: translateFormatter,
+      filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
+    },
+    {
+      headerName: "Population",
+      field: "pop",
+      flex: 1,
+      valueFormatter: translateFormatter,
+      filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
+    },
+    {
       headerName: "Chromosome",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      field: "chrom",
+      flex: 1,
+      valueFormatter: translateFormatter,
+      filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
     },
     {
-      field: "anc",
-      headerName: "Ancestry",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
-    },
-    {
-      field: "hap",
       headerName: "Haplotype",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      field: "hap",
+      flex: 1,
+      valueFormatter: translateFormatter,
+      filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        textFormatter: (r: string) => r.trim().toLowerCase()
+      }
+    },
+
+    // — numeric columns —
+    {
+      headerName: "Start",
+      field: "start",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter
     },
     {
-      field: "len_mea",
-      headerName: "Mean Length (bp)",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "End",
+      field: "end",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter
     },
     {
-      field: "len_med",
-      headerName: "Median Length (bp)",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "Length",
+      field: "length",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
     },
     {
-      field: "seq",
-      headerName: "Sequence",
-      width: 170,
-      headerClassName: "super-app-theme--header", // Apply header class
+      headerName: "SNPs",
+      field: "snps",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
     },
-    // Add more columns as needed
-  ];
+    {
+      headerName: "Mean Posterior Prob.",
+      field: "mean_prob",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+
+    // — ancestry/archaic proportions —
+    {
+      headerName: "Ancestral",
+      field: "anc",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Archaic",
+      field: "arc",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Altai",
+      field: "alt",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Chagyrskaya",
+      field: "cha",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Denisova",
+      field: "den",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+    {
+      headerName: "Vindija",
+      field: "vin",
+      flex: 1,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: scientificFormatter, hide: true
+    },
+
+    // — placeholders with raw names for now —
+    { headerName: "car", field: "car", flex: 1, filter: 'agNumberColumnFilter', valueFormatter: scientificFormatter, hide: true },
+    { headerName: "cne", field: "cne", flex: 1, filter: 'agNumberColumnFilter', valueFormatter: scientificFormatter, hide: true },
+    { headerName: "pal", field: "pal", flex: 1, filter: 'agNumberColumnFilter', valueFormatter: scientificFormatter, hide: true },
+    { headerName: "pch", field: "pch", flex: 1, filter: 'agNumberColumnFilter', valueFormatter: scientificFormatter, hide: true },
+    { headerName: "pde", field: "pde", flex: 1, filter: 'agNumberColumnFilter', valueFormatter: scientificFormatter, hide: true },
+    { headerName: "pvi", field: "pvi", flex: 1, filter: 'agNumberColumnFilter', valueFormatter: scientificFormatter, hide: true },
+  ]
+
+  // keep a ref to the grid API for later show/hide toggles
+  const gridApiRef = useRef<GridApi | null>(null)
+  // for controlling the columns‑menu popover
+  const [colMenuAnchor, setColMenuAnchor] = useState<null | HTMLElement>(null);
+
+  // open/close handlers
+  const openColMenu = (e: React.MouseEvent<HTMLElement>) => setColMenuAnchor(e.currentTarget);
+  const closeColMenu = () => setColMenuAnchor(null);
+
+  // toggle visibility helper
+  const toggleColumn = (colId: string) => {
+    const api = gridApiRef.current;
+    if (!api) return;
+
+    // get the Column object
+    const col = api.getColumn(colId);
+    const currentlyVisible = col?.isVisible() ?? false;
+
+    // flip it
+    api.setColumnsVisible([colId], !currentlyVisible);
+  };
   return (
     <Grid
       container
@@ -383,7 +468,7 @@ export const SummStatFrag: React.FC = () => {
             <div
               style={{
                 position: "absolute",
-                bottom: "10px",
+                bottom: "4px",
                 right: "45px", // Position in the lower right corner
                 display: "flex",
                 flexDirection: "row",
@@ -397,9 +482,9 @@ export const SummStatFrag: React.FC = () => {
                 variant="contained"
                 color="primary"
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  minWidth: "40px",
+                  width: "35px",
+                  height: "35px",
+                  minWidth: "35px",
                   borderRadius: "8px",
                   padding: 0,
                 }}
@@ -420,23 +505,26 @@ export const SummStatFrag: React.FC = () => {
               position: "relative",
             }}
           >
-            <DataGrid
-              className="custom-data-grid"
-              rows={data}
-              columns={columns}
-              pagination
-              autoPageSize // Automatically calculate the number of rows based on the container's height
-              getRowId={(row) => `${row.lin}_${row.hap}_${row.anc}`}
-
-            // Ensure correct row identification
-            />
+            <div className="ag-theme-alpine" style={{ width: "100%", height: "100%" }}>
+              <AgGridReact
+                onGridReady={(params: GridReadyEvent) => {
+                  gridApiRef.current = params.api;
+                }}
+                pagination={true}
+                paginationAutoPageSize={true}
+                columnDefs={columns}
+                rowData={data}
+                modules={[ClientSideRowModelModule]}
+                paginationPageSizeSelector={false}
+              />
+            </div>
 
             {/* Positioned Buttons for CSV and Plot View */}
             <div
               className="button-container"
               style={{
                 position: "absolute",
-                bottom: "10px",
+                bottom: "4px",
                 right: "45px",
                 display: "flex",
                 flexDirection: "row",
@@ -451,9 +539,9 @@ export const SummStatFrag: React.FC = () => {
                 variant="contained"
                 color="primary"
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  minWidth: "40px",
+                  width: "35px",
+                  height: "35px",
+                  minWidth: "35px",
                   borderRadius: "8px",
                   padding: 0,
                 }}
@@ -465,16 +553,53 @@ export const SummStatFrag: React.FC = () => {
                 variant="contained"
                 color="primary"
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  minWidth: "40px",
+                  width: "35px",
+                  height: "35px",
+                  minWidth: "35px",
                   borderRadius: "8px",
                   padding: 0,
                 }}
               >
                 <ImageIcon style={{ color: "#FFFFFF" }} />
               </Button>
+              {/* Column‑selector, now as a Button */}
+              <Button
+                onClick={openColMenu}
+                variant="contained"
+                color="primary"
+                style={{
+                  width: "35px",
+                  height: "35px",
+                  minWidth: "35px",
+                  borderRadius: "8px",
+                  padding: 0,
+                }}
+              >
+                <ViewColumnIcon style={{ color: "#FFFFFF" }} />
+              </Button>
+
+              {/* the Menu itself stays the same */}
+              <Menu
+                anchorEl={colMenuAnchor}
+                open={Boolean(colMenuAnchor)}
+                onClose={closeColMenu}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+              >
+                {columns.flatMap(col => {
+                  if ((col as ColGroupDef).children) return [];
+                  const def = col as ColDef;
+                  const id = def.field!;
+                  return (
+                    <MenuItem key={id} dense onClick={() => toggleColumn(id)}>
+                      <Checkbox checked={!def.hide} size="small" />
+                      <ListItemText primary={def.headerName} />
+                    </MenuItem>
+                  );
+                })}
+              </Menu>
             </div>
+
           </Grid>
         )}
         {!loading && !isFiltersApplied && <div>No data to display yet.</div>}

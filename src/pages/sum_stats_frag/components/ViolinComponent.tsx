@@ -1,6 +1,6 @@
 import { anc_cmaps, data_cmaps, reg_cmaps } from "@/assets/colormaps";
 import { variables } from "@/assets/sharedOptions";
-import { kernelDensityEstimator, kernelEpanechnikov } from "@/components/sum_stats_frag/densityUtils";
+import { kernelDensityEstimator, kernelEpanechnikov } from "@/pages/sum_stats_frag/static/densityUtils";
 import { DataPoint } from "@/types/sum_stat_frag_datapoint";
 import * as d3 from "d3";
 import React, { useEffect, useRef } from "react";
