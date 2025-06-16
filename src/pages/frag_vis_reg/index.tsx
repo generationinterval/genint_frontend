@@ -6,7 +6,7 @@ import { useSidebar } from "@/components/shared/SideBarContext/SideBarContext";
 import { Grid } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const defaultStat = "Frequency";
 const defaultRegs = variables.regions;
 const defaultChrms = variables.chrms;
@@ -73,7 +73,7 @@ export const FragVisReg: React.FC = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:2208/api/fragvisreg-data",
+        `${API_BASE}/api/fragvisreg-data`,
         {
           method: "POST",
           headers: {

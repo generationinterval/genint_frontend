@@ -24,7 +24,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 
 ModuleRegistry.registerModules([AllCommunityModule]);
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 export const SummStatInd: React.FC = () => {
   const [viewTabValue, setViewTabValue] = useState(0);
   const [tabValue, setTabValue] = useState(0);
@@ -89,7 +89,7 @@ export const SummStatInd: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:2208/api/sum-ind-data", {
+      const response = await fetch(`${API_BASE}/api/sum-ind-data`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

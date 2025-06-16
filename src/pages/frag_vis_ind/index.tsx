@@ -18,7 +18,7 @@ interface FilterState {
   min_length: number;
   color: string;
 }
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 interface DataPoint {
   ind: string;
   dat: string;
@@ -75,7 +75,7 @@ export const FragVisInd: React.FC = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:2208/api/fragvisind-data",
+        `${API_BASE}/api/fragvisind-data`,
         {
           method: "POST",
           headers: {
