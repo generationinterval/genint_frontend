@@ -3,10 +3,10 @@ import { variables } from "@/assets/sharedOptions";
 import { kernelDensityEstimator, kernelEpanechnikov } from "@/pages/sum_stats_ind/static/densityUtils";
 import { DataPoint } from "@/types/sum_stat_ind_datapoint";
 import * as d3 from "d3";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 type ViolinPlotProps = {
-  data: any[];
+  data: DataPoint[];
   var_1_mapped: string;
   bandwidth_divisor: number;
   col: string[];
@@ -461,9 +461,18 @@ const ViolinComponent: React.FC<ViolinPlotProps> = ({
         max_y_axis
       );
     }
-  }, [data, col, var_1_mapped, bandwidth_divisor]); // Re-render the histogram when any prop changes
+  }, [
+    containerRef,
+    svgRef,
+    data,
+    mea_med_1,
+    y_axis,
+    min_y_axis,
+    max_y_axis,
+    bandwidth_divisor,
+  ]);
 
-  const handleResize = () => {
+  const handleResize = useCallback(() => {
     if (containerRef.current && svgRef.current && data) {
       const { width, height } = containerRef.current.getBoundingClientRect();
       svgRef.current.setAttribute("width", String(width));
@@ -480,7 +489,16 @@ const ViolinComponent: React.FC<ViolinPlotProps> = ({
         max_y_axis
       );
     }
-  };
+  }, [
+    containerRef,
+    svgRef,
+    data,
+    mea_med_1,
+    y_axis,
+    min_y_axis,
+    max_y_axis,
+    bandwidth_divisor,
+  ]);
 
   useEffect(() => {
     // Attach resize event listener
@@ -491,7 +509,7 @@ const ViolinComponent: React.FC<ViolinPlotProps> = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [data]); // Depend on plotData to ensure resizing occurs after data is loaded
+  }, [data, handleResize]); // Depend on plotData to ensure resizing occurs after data is loaded
 
   useEffect(() => {
     // Handle resize when the sidebar visibility changes
