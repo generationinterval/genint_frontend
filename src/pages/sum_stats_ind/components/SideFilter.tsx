@@ -822,34 +822,35 @@ const SideFilter: React.FC<SideFilterProps> = ({
                     </Select>
                   </FormControl>
                 )}
-                {filters.x_axis === "Define Range" && (
-                  <Box
-                    sx={{
-                      width: "100%",
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      mb: 1,
-                      mt: 1,
-                    }}
-                  >
-                    <TextField
-                      sx={{ width: "49%" }}
-                      label="Min X"
-                      inputProps={{ type: "number" }}
-                      value={filters.min_x_axis}
-                      onChange={handleNumberInput("min_x_axis")}
-                    />
-                    <TextField
-                      sx={{ width: "49%" }}
-                      label="Max X"
-                      inputProps={{ type: "number" }}
-                      value={filters.max_x_axis}
-                      onChange={handleNumberInput("max_x_axis")}
-                    />
-                  </Box>
-                )}
+                {filters.x_axis === "Define Range" && filters.plot !== "Violin"
+                  && (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mb: 1,
+                        mt: 1,
+                      }}
+                    >
+                      <TextField
+                        sx={{ width: "49%" }}
+                        label="Min X"
+                        inputProps={{ type: "number" }}
+                        value={filters.min_x_axis}
+                        onChange={handleNumberInput("min_x_axis")}
+                      />
+                      <TextField
+                        sx={{ width: "49%" }}
+                        label="Max X"
+                        inputProps={{ type: "number" }}
+                        value={filters.max_x_axis}
+                        onChange={handleNumberInput("max_x_axis")}
+                      />
+                    </Box>
+                  )}
 
                 <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
                   <InputLabel id="y_axis_options">Y Axis Options</InputLabel>
@@ -862,7 +863,7 @@ const SideFilter: React.FC<SideFilterProps> = ({
                   >
                     {/* Dynamically determine the options */}
                     {(filters.plot === "Violin"
-                      ? ["Free Axis", "Shared Axis", "Define Range"]
+                      ? ["Shared Axis", "Define Range"]
                       : ["Free Axis", "Shared Axis", "Define Range"]
                     ).map((option, index) => (
                       <MenuItem key={index} value={option}>
