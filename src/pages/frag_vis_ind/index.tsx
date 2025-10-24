@@ -49,10 +49,9 @@ const defaultChrms = chrms_all.options; // Assuming chrms_all.options contains a
 const defaultAncs = ancestries_noAll.options; // Assuming ancestries_noAll.options contains all ancestries
 const defaultColor = "Ancestry";
 const defaultTreeLin = [
-  "HGDP00535_HGDP",
-  "HGDP00535_PGNO",
-  "HG02351_1KGP",
-  "PH_AytaMB-02_AYTA",
+  "HGDP00535_DATA",
+  "HGDP00536_DATA",
+  "HGDP01149_DATA",
 ];
 
 export const FragVisInd: React.FC = () => {
